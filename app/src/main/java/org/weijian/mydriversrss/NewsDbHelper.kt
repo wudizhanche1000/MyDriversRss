@@ -7,6 +7,8 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
+import android.util.Log
+import java.text.DateFormat
 
 class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase?) {
@@ -34,23 +36,39 @@ class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         const val COLUMN_PUBDATE = "PUB_DATE"
 
         const val CREATE_NEWS_DB = """CREATE TABLE $TABLE_NAME (
-                $COLUMN_ID INTEGER PRIMARY KEY,
+                $COLUMN_GUID TEXT PRIMARY KEY,
                 $COLUMN_TITLE TEXT,
                 $COLUMN_LINK TEXT,
                 $COLUMN_DESCRIPTION TEXT,
                 $COLUMN_AUTHOR TEXT,
                 $COLUMN_CATEGORY TEXT,
                 $COLUMN_COMMENT TEXT,
-                $COLUMN_GUID TEXT,
-                $COLUMN_PUBDATE DATE,
-                )"""
-        const val INSERT_NEWS = """INSERT INTO NEWS ($COLUMN_ID,$COLUMN_TITLE,$COLUMN_LINK,
-        $COLUMN_DESCRIPTION,$COLUMN_AUTHOR,$COLUMN_CATEGORY,$COLUMN_COMMENT,$COLUMN_GUID,
-        $COLUMN_PUBDATE) VALUES(NULL,%s, %s ,%s ,%s ,%s ,%s,%s,%s)
-        """
+                $COLUMN_PUBDATE DATE)"""
+        const val INSERT_NEWS = """INSERT INTO NEWS ($COLUMN_GUID,$COLUMN_TITLE,$COLUMN_LINK,
+        $COLUMN_DESCRIPTION,$COLUMN_AUTHOR,$COLUMN_CATEGORY,$COLUMN_COMMENT,
+        $COLUMN_PUBDATE) VALUES(?, ?, ?, ?, ?, ?, ?, ?)"""
     }
 
-    fun insert(news: News) {
-        val db = getWritableDatabase()
+
+    fun exists(news: News): Boolean {
+        val db = this.readableDatabase
+        val sql = "SELECT $COLUMN_GUID FROM $TABLE_NAME WHERE $COLUMN_GUID=?"
+        val cursor = db.rawQuery(sql, arrayOf(news.guid))
+        val exists = cursor.count >= 1
+        cursor.close()
+        return exists
+    }
+
+    fun insertNews(newsList: Collection<News>) {
+        val db = this.writableDatabase
+        try {
+            for (news in newsList) {
+                if (!exists(news)) {
+                    val dateString = DateFormat.getDateInstance().format(news.pubDate)
+                    db.execSQL(INSERT_NEWS, arrayOf(news.guid, news.title, news.link, news.description, news.author, news.category, news.comment, dateString))
+                }
+            }
+        } finally {
+        }
     }
 }

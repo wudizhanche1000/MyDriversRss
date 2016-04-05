@@ -8,7 +8,7 @@ import android.support.v4.content.LocalBroadcastManager
  * Created by weijian on 16-4-5.
  */
 class BroadcastNotifier(val context: Context) {
-    private var mBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
+    private var mBroadcastManager: LocalBroadcastManager= LocalBroadcastManager.getInstance(context)
     fun broadcastIntentWithStatus(status: Int) {
         var localIntent = Intent();
         localIntent.action = Constants.BROADCAST_ACTION
@@ -16,5 +16,4 @@ class BroadcastNotifier(val context: Context) {
         localIntent.addCategory(Intent.CATEGORY_DEFAULT)
         mBroadcastManager.sendBroadcast(localIntent)
     }
-
 }
