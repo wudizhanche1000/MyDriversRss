@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 data class News(var title: String? = null, var link: String? = null, var description: String? = null,
-                var author: String? = null, var catagory: String? = null, var comment: String? = null,
+                var author: String? = null, var category: String? = null, var comment: String? = null,
                 var guid: String? = null, var pubDate: Date? = null) {
 }
 
@@ -52,7 +52,7 @@ class RssPullParser {
                     } else if (eventName.equals(AUTHOR, true) && news != null) {
                         news.author = parser.nextText()
                     } else if (eventName.equals(CATEGORY, true) && news != null) {
-                        news.catagory = parser.nextText()
+                        news.category = parser.nextText()
                     } else if (eventName.equals(COMMENTS, true) && news != null) {
                         news.comment = parser.nextText()
                     } else if (eventName.equals(GUID, true) && news != null) {
