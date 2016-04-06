@@ -55,19 +55,19 @@ class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
     fun insertNews(newsList: Collection<News>) {
         val db = this.writableDatabase
+        db.beginTransaction()
         try {
-            db.beginTransaction()
             for (news in newsList) {
                 if (!exists(news)) {
                     val dateString = DateFormat.getDateInstance().format(news.pubDate)
                     db.execSQL(INSERT_NEWS, arrayOf(news.guid, news.title, news.link, news.description, news.author, news.category, news.comment, dateString))
                 }
             }
+            db.setTransactionSuccessful()
         } finally {
-            if(db.inTransaction()){
-                db.endTransaction()
-            }
+            db.endTransaction()
             db.close()
         }
     }
+
 }

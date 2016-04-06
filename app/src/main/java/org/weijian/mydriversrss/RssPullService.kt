@@ -12,7 +12,7 @@ class RssPullService constructor() : IntentService("RssPullService") {
     var mBroadcastNotifier: BroadcastNotifier? = null
     override fun onHandleIntent(intent: Intent) {
         val dataString = intent.dataString
-        mBroadcastNotifier= BroadcastNotifier(this) as BroadcastNotifier
+        mBroadcastNotifier= BroadcastNotifier(this)
         val url = URL(Constants.RSS_ADDRESS)
         mBroadcastNotifier?.broadcastIntentWithStatus(Constants.STATE_ACTION_STARTING)
         val httpConnection = url.openConnection()
@@ -24,11 +24,5 @@ class RssPullService constructor() : IntentService("RssPullService") {
         val dbHelper = NewsDbHelper(this)
         dbHelper.insertNews(newsList)
         mBroadcastNotifier?.broadcastIntentWithStatus(Constants.STATE_ACTION_COMPLETE)
-
-        //        var localIntent=Intent(BROADCAST_ACTION).putExtra(EXTENDED_DATA_STATUS,status)
-        //        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
-
-
     }
-
 }
