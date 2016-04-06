@@ -3,18 +3,17 @@ package org.weijian.mydriversrss
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.UriMatcher
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
 import android.provider.BaseColumns
-import java.text.DateFormat
+import org.weijian.mydriversrss.NewsProviderContract.*;
 
 private const val DATABASE_NAME = "NewsData"
 private const val DATABASE_VERSION = 1
-
 private const val NEWS_TABLE_NAME = "News"
-
 private const val COLUMN_ID = BaseColumns._ID
 private const val COLUMN_TITLE = "TITLE"
 private const val COLUMN_LINK = "LINK"
@@ -39,48 +38,30 @@ private const val CREATE_NEWS_DB_SQL = """CREATE TABLE $NEWS_TABLE_NAME (
 
 class NewsProvider : ContentProvider() {
 
-    inner class NewsProviderHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
-            null, DATABASE_VERSION) {
-        override fun onCreate(db: SQLiteDatabase) {
-            db.execSQL(CREATE_NEWS_DB_SQL)
+    private var mProviderHelper: SQLiteOpenHelper
+
+    init {
+        mProviderHelper = NewsProviderHelper(context)
+    }
+
+    companion object {
+        const val AUTHORITY = ""
+        val mUriMatcher = UriMatcher(UriMatcher.NO_MATCH)
+
+        init {
+            mUriMatcher.addURI(AUTHORITY, NEWS_TABLE_NAME, NEWS_URI_CODE)
         }
-
-        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-            throw UnsupportedOperationException()
-        }
-
-
-        //        fun exists(news: News): Boolean {
-        //            val db = this.readableDatabase
-        //            val sql = "SELECT $COLUMN_GUID FROM $TABLE_NAME WHERE $COLUMN_GUID=?"
-        //            val cursor = db.rawQuery(sql, arrayOf(news.guid))
-        //            val exists = cursor.count >= 1
-        //            cursor.close()
-        //            return exists
-        //        }
-
-        //        fun insertNews(newsList: Collection<News>) {
-        //            val db = this.writableDatabase
-        //            db.beginTransaction()
-        //            try {
-        //                for (news in newsList) {
-        //                    if (!exists(news)) {
-        //                        val dateString = DateFormat.getDateInstance().format(news.pubDate)
-        //                        db.execSQL(INSERT_NEWS, arrayOf(news.guid, news.title, news.link, news.description, news.author, news.category, news.comment, dateString))
-        //                    }
-        //                }
-        //                db.setTransactionSuccessful()
-        //            } finally {
-        //                db.endTransaction()
-        //                db.close()
-        //            }
-        //        }
-
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
         // Implement this to handle requests to delete one or more rows.
-        throw UnsupportedOperationException("Not yet implemented")
+
+        when(mUriMatcher.match(uri)){
+            NewsProviderContract.NEWS_URI_CODE->{
+
+            }
+        }
+        return -1
     }
 
     override fun getType(uri: Uri): String? {
@@ -109,5 +90,16 @@ class NewsProvider : ContentProvider() {
                         selectionArgs: Array<String>?): Int {
         // TODO: Implement this to handle requests to update one or more rows.
         throw UnsupportedOperationException("Not yet implemented")
+    }
+
+    inner class NewsProviderHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
+            null, DATABASE_VERSION) {
+        override fun onCreate(db: SQLiteDatabase) {
+            db.execSQL(CREATE_NEWS_DB_SQL)
+        }
+
+        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+            throw UnsupportedOperationException()
+        }
     }
 }
