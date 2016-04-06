@@ -1,13 +1,8 @@
 package org.weijian.mydriversrss
 
-import android.content.ContentProvider
-import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import android.net.Uri
-import android.util.Log
 import java.text.DateFormat
 
 class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -25,7 +20,6 @@ class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
         const val TABLE_NAME = "News"
 
-        const val COLUMN_ID = "ID"
         const val COLUMN_TITLE = "TITLE"
         const val COLUMN_LINK = "LINK"
         const val COLUMN_DESCRIPTION = "DESCRIPTION"
@@ -62,6 +56,7 @@ class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     fun insertNews(newsList: Collection<News>) {
         val db = this.writableDatabase
         try {
+            db.beginTransaction()
             for (news in newsList) {
                 if (!exists(news)) {
                     val dateString = DateFormat.getDateInstance().format(news.pubDate)
@@ -69,6 +64,10 @@ class NewsDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
                 }
             }
         } finally {
+            if(db.inTransaction()){
+                db.endTransaction()
+            }
+            db.close()
         }
     }
 }

@@ -16,6 +16,7 @@ class RssPullService constructor() : IntentService("RssPullService") {
         val url = URL(Constants.RSS_ADDRESS)
         mBroadcastNotifier?.broadcastIntentWithStatus(Constants.STATE_ACTION_STARTING)
         val httpConnection = url.openConnection()
+        // TODO fix exception when no network available
         val inputStream = BufferedInputStream(httpConnection.inputStream)
         val parser = RssPullParser()
         val newsList = parser.parse(inputStream)

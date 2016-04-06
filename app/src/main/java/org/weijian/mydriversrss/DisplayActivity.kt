@@ -13,16 +13,18 @@ import android.support.v7.widget.CardView
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
+import android.text.Html
+import android.text.TextUtils
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import java.net.URLDecoder
 
 class DisplayActivity : AppCompatActivity() {
     private var mRecyclerView: RecyclerView? = null
-    private var mNewsAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>? = null
-    private var mLayoutManager: RecyclerView.LayoutManager? = null
     private var mServiceIntent: Intent? = null
     private var mStatusReciver: StatusReceiver? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,11 +32,9 @@ class DisplayActivity : AppCompatActivity() {
         setContentView(R.layout.activity_display)
         val toolbar = findViewById(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
-        var recyclerView = findViewById(R.id.recycler_view) as RecyclerView
-        var linearLayoutManager = LinearLayoutManager(this)
-        recyclerView.layoutManager = linearLayoutManager
-        val rssServiceIntent = Intent(this, RssPullService::class.java)
-        startService(rssServiceIntent)
+        mRecyclerView = findViewById(R.id.recycler_view) as RecyclerView
+        mServiceIntent = Intent(this, RssPullService::class.java)
+        startService(mServiceIntent)
         val statusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
         statusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
@@ -46,18 +46,21 @@ class DisplayActivity : AppCompatActivity() {
             var dbHelper = NewsDbHelper(this@DisplayActivity)
             var db = dbHelper.readableDatabase
             var cursor = db.rawQuery("SELECT * FROM ${NewsDbHelper.TABLE_NAME}", null)
-            var newsList = listOf<News>()
+            var newsList = mutableListOf<News>()
             cursor.moveToFirst()
             do {
                 val title = cursor.getString(cursor.getColumnIndex(NewsDbHelper.COLUMN_TITLE))
                 val description = cursor.getString(cursor.getColumnIndex(NewsDbHelper.COLUMN_DESCRIPTION))
+                newsList.add(News(title = title, description = description))
             } while (cursor.moveToNext())
             return newsList
         }
 
         override fun onPostExecute(result: List<News>) {
-            super.onPostExecute(result)
+            var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
+            mRecyclerView?.layoutManager = linearLayoutManager
             mRecyclerView?.adapter = NewsAdapter(result)
+
 
         }
     }
@@ -95,10 +98,17 @@ class DisplayActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder?, position: Int) {
+            var newsHolder = holder as NewsHolder
+            val item = newsList[position]
+            newsHolder.titleView?.text = item.title
+            newsHolder.titleView?.paint?.isFakeBoldText = true
+            newsHolder.titleView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
+            newsHolder.descriptionView?.text = Html.fromHtml(item.description).toString().substring(0..25) + "..."
+            newsHolder.descriptionView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
         }
 
         override fun getItemCount(): Int {
-            throw UnsupportedOperationException()
+            return newsList.size
         }
 
     }
