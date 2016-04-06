@@ -57,6 +57,7 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
         statusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
         LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, statusIntentFilter)
+
     }
 
     override fun onResume() {
