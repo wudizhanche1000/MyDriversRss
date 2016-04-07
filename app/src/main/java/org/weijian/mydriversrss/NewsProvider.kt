@@ -98,6 +98,7 @@ class NewsProvider constructor() : ContentProvider() {
                 count = -1
             }
         }
+        context.contentResolver.notifyChange(NEWS_CONTENT_URI, null)
         return count
     }
 

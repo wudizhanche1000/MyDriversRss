@@ -2,9 +2,10 @@ package org.weijian.mydriversrss
 
 import android.app.LoaderManager
 import android.content.*
+import android.database.ContentObserver
 import android.database.Cursor
-import android.os.AsyncTask
 import android.os.Bundle
+import android.os.Handler
 import android.support.design.widget.AppBarLayout
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.widget.SwipeRefreshLayout
@@ -65,7 +66,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         mSwipeRefreshLayout = findViewById(R.id.swipe_refresh) as SwipeRefreshLayout
         mAppbarLayout = findViewById(R.id.appbarLayout) as AppBarLayout
 
-        // Set recyclerView layoutManager
+        // Set RecyclerView layoutManager
         var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
         mRecyclerView?.layoutManager = linearLayoutManager
 
@@ -80,7 +81,8 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
 
         loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
-        //                contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, )
+
+        contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, )
 
     }
 
@@ -107,13 +109,12 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         mSwipeRefreshLayout?.isRefreshing = false
     }
 
-    inner class RetrieveDatabaseTask : AsyncTask<Unit, Unit, Cursor>() {
-        override fun doInBackground(vararg params: Unit?): Cursor {
-            throw UnsupportedOperationException()
-        }
 
+    inner class NewsObserver constructor(handler: Handler) : ContentObserver(handler) {
+        override fun onChange(selfChange: Boolean) {
+            super.onChange(selfChange)
     }
-
+    }
     inner class StatusReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val status = intent.extras.get(Constants.EXTENDED_DATA_STATUS)
