@@ -1,9 +1,7 @@
 package org.weijian.mydriversrss
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.LoaderManager
+import android.content.*
 import android.database.Cursor
 import android.os.AsyncTask
 import android.os.Bundle
@@ -26,17 +24,35 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 
-class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener{
-    override fun onRefresh() {
-        startService(mServiceIntent)
+class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener, LoaderManager.LoaderCallbacks<Cursor> {
+    override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
+        if (data != null) {
+            var adapter = NewsAdapter(data)
+            mRecyclerView?.adapter = adapter
+            notifyRecyclerView()
+        }
     }
+
+    override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor>? {
+        when (id) {
+            NewsProviderContract.NEWS_ALL -> {
+                return CursorLoader(baseContext, NewsProviderContract.NEWS_CONTENT_URI, null, null, null, null)
+            }
+            else -> return null
+        }
+    }
+
+    override fun onLoaderReset(loader: Loader<Cursor>?) {
+        throw UnsupportedOperationException()
+    }
+
 
     private var mRecyclerView: RecyclerView? = null
     private var mServiceIntent: Intent? = null
     private var mStatusReciver: StatusReceiver? = null
     private var mProgressBar: ProgressBar? = null
-    private var mSwipeRefreshLayout:SwipeRefreshLayout?=null
-    private  var mAppbarLayout:AppBarLayout?=null
+    private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
+    private var mAppbarLayout: AppBarLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,8 +62,12 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
 
         mRecyclerView = findViewById(R.id.recycler_view) as RecyclerView
         mProgressBar = findViewById(R.id.progress_bar) as ProgressBar
-        mSwipeRefreshLayout=findViewById(R.id.swipe_refresh) as SwipeRefreshLayout
-        mAppbarLayout=findViewById(R.id.appbarLayout) as AppBarLayout
+        mSwipeRefreshLayout = findViewById(R.id.swipe_refresh) as SwipeRefreshLayout
+        mAppbarLayout = findViewById(R.id.appbarLayout) as AppBarLayout
+
+        // Set recyclerView layoutManager
+        var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
+        mRecyclerView?.layoutManager = linearLayoutManager
 
         mSwipeRefreshLayout?.setOnRefreshListener(this)
 
@@ -57,6 +77,10 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
         statusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
         LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, statusIntentFilter)
+
+
+        loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
+        //                contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, )
 
     }
 
@@ -74,21 +98,20 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
         return true
     }
 
+    override fun onRefresh() {
+        startService(mServiceIntent)
+    }
+
+    fun notifyRecyclerView() {
+        mProgressBar?.visibility = View.GONE
+        mSwipeRefreshLayout?.isRefreshing = false
+    }
+
     inner class RetrieveDatabaseTask : AsyncTask<Unit, Unit, Cursor>() {
         override fun doInBackground(vararg params: Unit?): Cursor {
-            var dbHelper = NewsDbHelper(this@DisplayActivity)
-            var db = dbHelper.readableDatabase
-            var cursor = db.rawQuery("SELECT * FROM ${NewsDbHelper.TABLE_NAME}", null)
-            return cursor
+            throw UnsupportedOperationException()
         }
 
-        override fun onPostExecute(result: Cursor) {
-            mProgressBar?.visibility = View.GONE
-            var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
-            mRecyclerView?.layoutManager = linearLayoutManager
-            mRecyclerView?.adapter = NewsAdapter(result)
-            mSwipeRefreshLayout?.isRefreshing=false
-        }
     }
 
     inner class StatusReceiver : BroadcastReceiver() {
@@ -97,7 +120,7 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
             when (status) {
                 Constants.STATE_ACTION_COMPLETE -> {
                     Log.d("BROADCAST_RECEIVER", "STATE_ACTION_COMPLETE")
-                    RetrieveDatabaseTask().execute()
+                    //                    RetrieveDatabaseTask().execute()
                 }
             }
         }
@@ -127,10 +150,10 @@ class DisplayActivity : AppCompatActivity(),SwipeRefreshLayout.OnRefreshListener
             var newsHolder = holder as NewsHolder
             newsCursor.moveToPosition(position)
 
-            newsHolder.titleView?.text = newsCursor.getString(newsCursor.getColumnIndex(NewsDbHelper.COLUMN_TITLE))
+            newsHolder.titleView?.text = newsCursor.getString(newsCursor.getColumnIndex(NewsProvider.COLUMN_TITLE))
             newsHolder.titleView?.paint?.isFakeBoldText = true
             newsHolder.titleView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
-            var description = newsCursor.getString(newsCursor.getColumnIndex(NewsDbHelper.COLUMN_DESCRIPTION))
+            var description = newsCursor.getString(newsCursor.getColumnIndex(NewsProvider.COLUMN_DESCRIPTION))
             newsHolder.descriptionView?.text = Html.fromHtml(description).toString().substring(0..25) + "..."
             newsHolder.descriptionView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
         }

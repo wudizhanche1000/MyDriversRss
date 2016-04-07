@@ -3,6 +3,7 @@ package org.weijian.mydriversrss
 /**
  * Created by weijian on 16-3-30.
  */
+import android.content.ContentValues
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
@@ -25,49 +26,51 @@ class RssPullParser {
         const val CATEGORY = "CATEGORY"
         const val COMMENTS = "COMMENTS"
         const val GUID = "GUID"
-        const val PUBDATE = "PUBDATE"
+        const val PUBDATE = "PUB_DATE"
     }
 
-    fun parse(input: InputStream, encoding: String = "UTF-8"): List<News> {
+    fun parse(input: InputStream, encoding: String = "UTF-8"): List<ContentValues> {
         val factory = XmlPullParserFactory.newInstance()
         factory.isNamespaceAware = false
         var parser = factory.newPullParser()
         parser.setInput(input, encoding)
         var eventType = parser.eventType
-        var newsList = mutableListOf<News>()
-        var news: News? = null
+        var newsList = mutableListOf<ContentValues>()
+        var contentValues: ContentValues? = null
         loop@while (true) {
             var eventName = parser.name
             when (eventType) {
-                XmlPullParser.START_DOCUMENT ->{}
+                XmlPullParser.START_DOCUMENT -> {
+                }
                 XmlPullParser.START_TAG -> {
                     if (eventName.equals(ITEM, true)) {
-                        news = News()
-                    } else if (eventName.equals(TITLE, true) && news != null) {
-                        news.title = parser.nextText()
-                    } else if (eventName.equals(LINK, true) && news != null) {
-                        news.link = parser.nextText()
-                    } else if (eventName.equals(DESCRIPTION, true) && news != null) {
-                        news.description = parser.nextText()
-                    } else if (eventName.equals(AUTHOR, true) && news != null) {
-                        news.author = parser.nextText()
-                    } else if (eventName.equals(CATEGORY, true) && news != null) {
-                        news.category = parser.nextText()
-                    } else if (eventName.equals(COMMENTS, true) && news != null) {
-                        news.comment = parser.nextText()
-                    } else if (eventName.equals(GUID, true) && news != null) {
-                        news.guid = parser.nextText()
-                    } else if (eventName.equals(PUBDATE, true) && news != null) {
+                        contentValues = ContentValues(9)
+                    }
+                    if (eventName.equals(TITLE, true)) {
+                        contentValues?.put(TITLE, parser.nextText())
+                    } else if (eventName.equals(LINK, true) ) {
+                        contentValues?.put(LINK, parser.nextText())
+                    } else if (eventName.equals(DESCRIPTION, true)) {
+                        contentValues?.put(DESCRIPTION, parser.nextText())
+                    } else if (eventName.equals(AUTHOR, true) ) {
+                        contentValues?.put(AUTHOR, parser.nextText())
+                    } else if (eventName.equals(CATEGORY, true) ) {
+                        contentValues?.put(CATEGORY, parser.nextText())
+                    } else if (eventName.equals(COMMENTS, true) ) {
+                        contentValues?.put(COMMENTS, parser.nextText())
+                    } else if (eventName.equals(GUID, true) ) {
+                        contentValues?.put(GUID, parser.nextText())
+                    } else if (eventName.equals(PUBDATE, true)) {
                         var dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                         val date = dateFormat.parse(parser.nextText())
-                        news.pubDate = date
+                        contentValues?.put(PUBDATE, dateFormat.format(date))
                     }
                 }
                 XmlPullParser.END_TAG -> {
                     if (eventName.equals(ITEM, true)) {
-                        if (news != null) {
-                            newsList.add(news)
-                            news = null
+                        if (contentValues != null) {
+                            newsList.add(contentValues)
+                            contentValues = null
                         }
                     }
                 }

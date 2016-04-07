@@ -26,7 +26,7 @@
             android:exported="false" />
 
         <provider
-            android:name=".NewsProvider"
+            android:name="org.weijian.mydriversrss.NewsProvider"
             android:authorities="org.weijian.mydriversrss.NewsProvider"
             android:enabled="true"
             android:exported="false"></provider>
