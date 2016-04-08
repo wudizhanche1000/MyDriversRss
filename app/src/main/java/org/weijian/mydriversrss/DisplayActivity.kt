@@ -28,7 +28,7 @@ import android.widget.TextView
 class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener, LoaderManager.LoaderCallbacks<Cursor> {
     override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
         if (data != null) {
-            var adapter = NewsAdapter(data)
+            var adapter = NewsAdapter(baseContext, data)
             mRecyclerView?.adapter = adapter
             notifyRecyclerView()
         }
@@ -44,7 +44,6 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
-        throw UnsupportedOperationException()
     }
 
 
@@ -78,12 +77,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         statusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
         LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, statusIntentFilter)
-
-
         loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
-
-        contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, )
-
     }
 
     override fun onResume() {
@@ -113,8 +107,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     inner class NewsObserver constructor(handler: Handler) : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean) {
             super.onChange(selfChange)
+        }
     }
-    }
+
     inner class StatusReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val status = intent.extras.get(Constants.EXTENDED_DATA_STATUS)
@@ -128,11 +123,29 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
     }
 
-    inner class NewsAdapter constructor(var newsCursor: Cursor) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    inner class NewsAdapter constructor(context: Context, newsCursor: Cursor) :
+            CursorRecyclerViewAdapter<RecyclerView.ViewHolder>(context, newsCursor) {
+        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, cursor: Cursor?) {
+            var newsHolder = viewHolder as NewsHolder
+            if (cursor != null) {
+                newsHolder.titleView.text = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_TITLE))
+                newsHolder.titleView.paint?.isFakeBoldText = true
+                newsHolder.titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
+                var description = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_DESCRIPTION))
+                newsHolder.descriptionView.text = Html.fromHtml(description).toString().substring(0..25) + "..."
+                newsHolder.descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
+                newsHolder.cardView.setOnClickListener {
+                    var intent = Intent(baseContext, NewsDetailActivity::class.java)
+                    intent.putExtra(NewsDetailActivity.NEWS_URL, cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_GUID)))
+                    startActivity(intent)
+                }
+            }
+        }
+
         inner class NewsHolder constructor(var cardView: CardView) : RecyclerView.ViewHolder(cardView) {
-            var titleView: TextView? = null
-            var descriptionView: TextView? = null
-            var newsImageView: ImageView? = null
+            lateinit var titleView: TextView
+            lateinit var descriptionView: TextView
+            lateinit var newsImageView: ImageView
 
             init {
                 titleView = cardView.findViewById(R.id.news_title) as TextView
@@ -145,22 +158,6 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             var newsCard = LayoutInflater.from(this@DisplayActivity).inflate(R.layout.newscard_view, parent, false) as CardView
             var newsHolder = NewsHolder(newsCard)
             return newsHolder
-        }
-
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder?, position: Int) {
-            var newsHolder = holder as NewsHolder
-            newsCursor.moveToPosition(position)
-
-            newsHolder.titleView?.text = newsCursor.getString(newsCursor.getColumnIndex(NewsProvider.COLUMN_TITLE))
-            newsHolder.titleView?.paint?.isFakeBoldText = true
-            newsHolder.titleView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
-            var description = newsCursor.getString(newsCursor.getColumnIndex(NewsProvider.COLUMN_DESCRIPTION))
-            newsHolder.descriptionView?.text = Html.fromHtml(description).toString().substring(0..25) + "..."
-            newsHolder.descriptionView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
-        }
-
-        override fun getItemCount(): Int {
-            return newsCursor.count
         }
 
     }

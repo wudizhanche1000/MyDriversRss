@@ -11,7 +11,6 @@ import java.net.URL
 class RssPullService constructor() : IntentService("RssPullService") {
     var mBroadcastNotifier: BroadcastNotifier? = null
     override fun onHandleIntent(intent: Intent) {
-        val dataString = intent.dataString
         mBroadcastNotifier = BroadcastNotifier(this)
         val url = URL(Constants.RSS_ADDRESS)
         mBroadcastNotifier?.broadcastIntentWithStatus(Constants.STATE_ACTION_STARTING)

@@ -26,10 +26,18 @@
             android:exported="false" />
 
         <provider
-            android:name="org.weijian.mydriversrss.NewsProvider"
+            android:name=".NewsProvider"
             android:authorities="org.weijian.mydriversrss.NewsProvider"
             android:enabled="true"
-            android:exported="false"></provider>
+            android:exported="false" />
+
+        <activity
+            android:name=".NewsDetailActivity"
+            android:parentActivityName=".DisplayActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".DisplayActivity" />
+        </activity>
     </application>
 
 </manifest>

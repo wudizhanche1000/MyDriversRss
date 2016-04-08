@@ -2,6 +2,7 @@ package org.weijian.mydriversrss
 
 import android.content.*
 import android.database.Cursor
+import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
@@ -76,13 +77,12 @@ class NewsProvider constructor() : ContentProvider() {
     }
 
     override fun bulkInsert(uri: Uri, newsArray: Array<out ContentValues>): Int {
-        val id = mUriMatcher.match(uri)
         var count = 0
-        when (id) {
+        when (mUriMatcher.match(uri)) {
             NEWS_ALL -> {
                 var db = mProviderHelper!!.writableDatabase
+                val rowsCount = DatabaseUtils.queryNumEntries(db, NEWS_TABLE_NAME)
                 db.beginTransaction()
-                var count = 0
                 try {
                     for (news in newsArray) {
                         val id = db.insertWithOnConflict(NEWS_TABLE_NAME, null, news, SQLiteDatabase.CONFLICT_IGNORE)
@@ -93,12 +93,16 @@ class NewsProvider constructor() : ContentProvider() {
                 } finally {
                     db.endTransaction()
                 }
+                val rowsAfterInsert = DatabaseUtils.queryNumEntries(db, NEWS_TABLE_NAME)
+                if (rowsAfterInsert - rowsCount > 0) {
+                    context.contentResolver.notifyChange(NEWS_CONTENT_URI, null)
+                    count = (rowsAfterInsert - rowsCount).toInt()
+                }
             }
             else -> {
                 count = -1
             }
         }
-        context.contentResolver.notifyChange(NEWS_CONTENT_URI, null)
         return count
     }
 
@@ -113,6 +117,7 @@ class NewsProvider constructor() : ContentProvider() {
         // TODO: Implement this to handle query requests from clients.
         var db = mProviderHelper!!.readableDatabase
         val cursor = db.query(NEWS_TABLE_NAME, projection, selection, selectionArgs, null, null, COLUMN_ID)
+        cursor.setNotificationUri(context.contentResolver, NEWS_CONTENT_URI)
         return cursor
     }
 
