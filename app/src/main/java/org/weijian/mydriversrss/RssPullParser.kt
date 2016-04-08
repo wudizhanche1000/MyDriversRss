@@ -18,15 +18,6 @@ data class News(var title: String? = null, var link: String? = null, var descrip
 
 class RssPullParser {
     companion object {
-        const val ITEM = "ITEM"
-        const val TITLE = "TITLE"
-        const val LINK = "LINK"
-        const val DESCRIPTION = "DESCRIPTION"
-        const val AUTHOR = "AUTHOR"
-        const val CATEGORY = "CATEGORY"
-        const val COMMENTS = "COMMENTS"
-        const val GUID = "GUID"
-        const val PUBDATE = "PUB_DATE"
     }
 
     fun parse(input: InputStream, encoding: String = "UTF-8"): List<ContentValues> {
@@ -43,31 +34,31 @@ class RssPullParser {
                 XmlPullParser.START_DOCUMENT -> {
                 }
                 XmlPullParser.START_TAG -> {
-                    if (eventName.equals(ITEM, true)) {
+                    if (eventName.equals(Constants.RSS_ITEM, true)) {
                         contentValues = ContentValues(9)
                     }
-                    if (eventName.equals(TITLE, true)) {
-                        contentValues?.put(TITLE, parser.nextText())
-                    } else if (eventName.equals(LINK, true) ) {
-                        contentValues?.put(LINK, parser.nextText())
-                    } else if (eventName.equals(DESCRIPTION, true)) {
-                        contentValues?.put(DESCRIPTION, parser.nextText())
-                    } else if (eventName.equals(AUTHOR, true) ) {
-                        contentValues?.put(AUTHOR, parser.nextText())
-                    } else if (eventName.equals(CATEGORY, true) ) {
-                        contentValues?.put(CATEGORY, parser.nextText())
-                    } else if (eventName.equals(COMMENTS, true) ) {
-                        contentValues?.put(COMMENTS, parser.nextText())
-                    } else if (eventName.equals(GUID, true) ) {
-                        contentValues?.put(GUID, parser.nextText())
-                    } else if (eventName.equals(PUBDATE, true)) {
+                    if (eventName.equals(Constants.RSS_ITEM_TITLE, true)) {
+                        contentValues?.put(Constants.RSS_ITEM_TITLE, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_LINK, true) ) {
+                        contentValues?.put(Constants.RSS_ITEM_LINK, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_DESCRIPTION, true)) {
+                        contentValues?.put(Constants.RSS_ITEM_DESCRIPTION, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_AUTHOR, true) ) {
+                        contentValues?.put(Constants.RSS_ITEM_AUTHOR, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_CATEGORY, true) ) {
+                        contentValues?.put(Constants.RSS_ITEM_CATEGORY, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_COMMENTS, true) ) {
+                        contentValues?.put(Constants.RSS_ITEM_COMMENTS, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_GUID, true) ) {
+                        contentValues?.put(Constants.RSS_ITEM_GUID, parser.nextText())
+                    } else if (eventName.equals(Constants.RSS_ITEM_PUBDATE, true)) {
                         var dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                         val date = dateFormat.parse(parser.nextText())
-                        contentValues?.put(PUBDATE, dateFormat.format(date))
+                        contentValues?.put(Constants.RSS_ITEM_PUBDATE, dateFormat.format(date))
                     }
                 }
                 XmlPullParser.END_TAG -> {
-                    if (eventName.equals(ITEM, true)) {
+                    if (eventName.equals(Constants.RSS_ITEM, true)) {
                         if (contentValues != null) {
                             newsList.add(contentValues)
                             contentValues = null
