@@ -143,9 +143,11 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
                 var description = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_DESCRIPTION))
                 newsHolder.descriptionView.text = Html.fromHtml(description).toString().substring(0..25) + "..."
                 newsHolder.descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
+
+                newsHolder.guid = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_GUID))
                 newsHolder.cardView.setOnClickListener {
                     var intent = Intent(baseContext, NewsDetailActivity::class.java)
-                    intent.putExtra(NewsDetailActivity.NEWS_URL, cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_GUID)))
+                    intent.putExtra(NewsDetailActivity.NEWS_URL, newsHolder.guid)
                     startActivity(intent)
                 }
             }
@@ -155,6 +157,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             lateinit var titleView: TextView
             lateinit var descriptionView: TextView
             lateinit var newsImageView: ImageView
+            lateinit var guid: String
 
             init {
                 titleView = cardView.findViewById(R.id.news_title) as TextView
