@@ -31,7 +31,6 @@ constructor(context: Context, cursor: Cursor?) : RecyclerView.Adapter<VH>() {
         mContentObserver = CursorContentObserver()
         if (mCursor != null) {
             mRowIdColumn = mCursor!!.getColumnIndex(BaseColumns._ID)
-            mCursor!!.registerDataSetObserver(mDataSetObserver)
             mCursor!!.registerContentObserver(mContentObserver)
         }
     }

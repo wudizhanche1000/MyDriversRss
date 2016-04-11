@@ -1,8 +1,10 @@
 package org.weijian.mydriversrss
 
+import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.webkit.WebView
+import java.net.URL
 
 class NewsDetailActivity : AppCompatActivity() {
 
@@ -15,8 +17,15 @@ class NewsDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_news_detail)
         webView = findViewById(R.id.webview) as WebView
-        val url = intent.getStringExtra(NEWS_URL)
-        webView.loadUrl(url)
+        val url = URL(intent.getStringExtra(NEWS_URL))
+        webView.loadUrl(url.toString())
+
+    }
+
+    inner class RetrieveNews : AsyncTask<URL, Void, String>() {
+        override fun doInBackground(vararg params: URL?): String? {
+            throw UnsupportedOperationException()
+        }
 
     }
 }

@@ -29,8 +29,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
         if (data != null) {
             var adapter = NewsAdapter(baseContext, data)
-            mRecyclerView?.adapter = adapter
-            notifyRecyclerView()
+            mRecyclerView.swapAdapter(adapter, false)
+            if (mProgressBar.visibility != View.GONE)
+                mProgressBar.visibility = View.GONE
         }
     }
 
@@ -44,16 +45,16 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
+        mRecyclerView.swapAdapter(null, true)
     }
 
-
-    private var mRecyclerView: RecyclerView? = null
-    private var mServiceIntent: Intent? = null
-    private var mStatusReciver: StatusReceiver? = null
-    private var mProgressBar: ProgressBar? = null
-    private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
-    private var mAppbarLayout: AppBarLayout? = null
-
+    private lateinit var mRecyclerView: RecyclerView
+    private lateinit var mServiceIntent: Intent
+    private lateinit var mStatusReciver: StatusReceiver
+    private lateinit var mProgressBar: ProgressBar
+    private lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var mAppbarLayout: AppBarLayout
+    private lateinit var mStatusIntentFilter: IntentFilter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_display)
@@ -67,25 +68,30 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
         // Set RecyclerView layoutManager
         var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
-        mRecyclerView?.layoutManager = linearLayoutManager
+        mRecyclerView.layoutManager = linearLayoutManager
+        mSwipeRefreshLayout.setOnRefreshListener(this)
 
-        mSwipeRefreshLayout?.setOnRefreshListener(this)
-
+        // start RssPullService at startup
         mServiceIntent = Intent(this, RssPullService::class.java)
         startService(mServiceIntent)
-        val statusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
-        statusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
+
+        // init receiver
+        mStatusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
+        mStatusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
-        LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, statusIntentFilter)
+
         loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
+        contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, NewsObserver(Handler()))
     }
 
     override fun onResume() {
         super.onResume()
+        LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, mStatusIntentFilter)
     }
 
     override fun onPause() {
         super.onPause()
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mStatusReciver)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -99,14 +105,15 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     }
 
     fun notifyRecyclerView() {
-        mProgressBar?.visibility = View.GONE
-        mSwipeRefreshLayout?.isRefreshing = false
+        mProgressBar.visibility = View.GONE
+        mSwipeRefreshLayout.isRefreshing = false
     }
 
 
     inner class NewsObserver constructor(handler: Handler) : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean) {
             super.onChange(selfChange)
+            loaderManager.getLoader<Cursor>(NewsProviderContract.NEWS_ALL).forceLoad()
         }
     }
 
@@ -116,7 +123,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             when (status) {
                 Constants.STATE_ACTION_COMPLETE -> {
                     Log.d("BROADCAST_RECEIVER", "STATE_ACTION_COMPLETE")
-                    //                    RetrieveDatabaseTask().execute()
+                    if (mSwipeRefreshLayout.isRefreshing) {
+                        mSwipeRefreshLayout.isRefreshing = false
+                    }
                 }
             }
         }

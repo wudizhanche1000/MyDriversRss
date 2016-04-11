@@ -12,21 +12,22 @@ import org.weijian.mydriversrss.NewsProviderContract.*
 
 class NewsProvider constructor() : ContentProvider() {
 
-    private var mProviderHelper: SQLiteOpenHelper? = null
+    private lateinit var mProviderHelper: SQLiteOpenHelper
 
 
     companion object {
-        const val DATABASE_NAME = "NewsData"
-        const val DATABASE_VERSION = 6
+        const val DATABASE_NAME = "NewsData.db"
+        const val NEWS_TABLE_NAME = "News"
+        const val DATABASE_VERSION = 9
         const val COLUMN_ID = BaseColumns._ID
-        const val COLUMN_TITLE = RssPullParser.TITLE
-        const val COLUMN_LINK = RssPullParser.LINK
-        const val COLUMN_DESCRIPTION = RssPullParser.DESCRIPTION
-        const val COLUMN_AUTHOR = RssPullParser.AUTHOR
-        const val COLUMN_CATEGORY = RssPullParser.CATEGORY
-        const val COLUMN_COMMENTS = RssPullParser.COMMENTS
-        const val COLUMN_GUID = RssPullParser.GUID
-        const val COLUMN_PUBDATE = RssPullParser.PUBDATE
+        const val COLUMN_TITLE = Constants.RSS_ITEM_TITLE
+        const val COLUMN_LINK = Constants.RSS_ITEM_LINK
+        const val COLUMN_DESCRIPTION = Constants.RSS_ITEM_DESCRIPTION
+        const val COLUMN_AUTHOR = Constants.RSS_ITEM_AUTHOR
+        const val COLUMN_CATEGORY = Constants.RSS_ITEM_CATEGORY
+        const val COLUMN_COMMENTS = Constants.RSS_ITEM_COMMENTS
+        const val COLUMN_GUID = Constants.RSS_ITEM_GUID
+        const val COLUMN_PUBDATE = Constants.RSS_ITEM_PUBDATE
 
         private const val CREATE_NEWS_TABLE_SQL = """CREATE TABLE $NEWS_TABLE_NAME (
                 $COLUMN_ID INTEGER PRIMARY KEY,
@@ -37,8 +38,8 @@ class NewsProvider constructor() : ContentProvider() {
                 $COLUMN_AUTHOR TEXT,
                 $COLUMN_CATEGORY TEXT,
                 $COLUMN_COMMENTS TEXT,
-                $COLUMN_PUBDATE DATE)"""
-        private const val DROP_NEWS_TABLE = "DROP TABLE IF EXISTS $NEWS_TABLE_NAME"
+                $COLUMN_PUBDATE TEXT)"""
+        private const val DROP_NEWS_TABLE_SQL = "DROP TABLE IF EXISTS $NEWS_TABLE_NAME"
         val mUriMatcher: UriMatcher
 
         init {
@@ -50,17 +51,15 @@ class NewsProvider constructor() : ContentProvider() {
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
         // Implement this to handle requests to delete one or more rows.
-        var db = mProviderHelper?.writableDatabase
+        var db = mProviderHelper.writableDatabase
         var _id = -1L
         when (mUriMatcher.match(uri)) {
             NewsProviderContract.NEWS_ONE -> {
                 _id = ContentUris.parseId(uri)
             }
         }
-        val count = db?.delete(NEWS_TABLE_NAME, selection, selectionArgs)
-        if (count != null)
-            return count!!
-        else return -1
+        val count = db.delete(NEWS_TABLE_NAME, selection, selectionArgs)
+        return count
     }
 
     override fun getType(uri: Uri): String? {
@@ -80,7 +79,8 @@ class NewsProvider constructor() : ContentProvider() {
         var count = 0
         when (mUriMatcher.match(uri)) {
             NEWS_ALL -> {
-                var db = mProviderHelper!!.writableDatabase
+                var db = mProviderHelper.writableDatabase
+                // rowsCount before insert
                 val rowsCount = DatabaseUtils.queryNumEntries(db, NEWS_TABLE_NAME)
                 db.beginTransaction()
                 try {
@@ -94,9 +94,10 @@ class NewsProvider constructor() : ContentProvider() {
                     db.endTransaction()
                 }
                 val rowsAfterInsert = DatabaseUtils.queryNumEntries(db, NEWS_TABLE_NAME)
+                // if insert new rows, notify change
                 if (rowsAfterInsert - rowsCount > 0) {
-                    context.contentResolver.notifyChange(NEWS_CONTENT_URI, null)
                     count = (rowsAfterInsert - rowsCount).toInt()
+                    context.contentResolver.notifyChange(NEWS_CONTENT_URI, null)
                 }
             }
             else -> {
@@ -115,8 +116,8 @@ class NewsProvider constructor() : ContentProvider() {
     override fun query(uri: Uri, projection: Array<String>?, selection: String?,
                        selectionArgs: Array<String>?, sortOrder: String?): Cursor? {
         // TODO: Implement this to handle query requests from clients.
-        var db = mProviderHelper!!.readableDatabase
-        val cursor = db.query(NEWS_TABLE_NAME, projection, selection, selectionArgs, null, null, COLUMN_ID)
+        var db = mProviderHelper.readableDatabase
+        val cursor = db.query(NEWS_TABLE_NAME, projection, selection, selectionArgs, null, null, "$COLUMN_PUBDATE DESC")
         cursor.setNotificationUri(context.contentResolver, NEWS_CONTENT_URI)
         return cursor
     }
@@ -134,7 +135,7 @@ class NewsProvider constructor() : ContentProvider() {
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            db.execSQL(DROP_NEWS_TABLE)
+            db.execSQL(DROP_NEWS_TABLE_SQL)
             db.execSQL(CREATE_NEWS_TABLE_SQL)
         }
 

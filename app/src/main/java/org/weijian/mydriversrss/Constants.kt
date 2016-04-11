@@ -18,7 +18,7 @@ object Constants {
     const val RSS_ITEM_CATEGORY = "CATEGORY"
     const val RSS_ITEM_COMMENTS = "COMMENTS"
     const val RSS_ITEM_GUID = "GUID"
-    const val RSS_ITEM_PUBDATE = "PUB_DATE"
+    const val RSS_ITEM_PUBDATE = "PUBDATE"
 
     const val STATE_ACTION_STARTING = 1
     const val STATE_ACTION_RETRIEVED = 2
