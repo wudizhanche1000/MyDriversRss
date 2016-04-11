@@ -9,10 +9,14 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="org.weijian.mydriversrss.NewsDetailActivity">
 
-    <WebView
-        android:id="@+id/webview"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    </WebView>
+        <TextView
+            android:id="@+id/news_info"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:singleLine="false" />
+    </ScrollView>
 </RelativeLayout>
