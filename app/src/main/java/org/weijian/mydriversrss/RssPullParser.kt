@@ -8,12 +8,6 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
 import java.text.SimpleDateFormat
-import java.util.*
-
-data class News(var title: String? = null, var link: String? = null, var description: String? = null,
-                var author: String? = null, var category: String? = null, var comment: String? = null,
-                var guid: String? = null, var pubDate: Date? = null) {
-}
 
 
 class RssPullParser {

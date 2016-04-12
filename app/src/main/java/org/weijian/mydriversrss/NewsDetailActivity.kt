@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
 import android.text.Html
 import android.text.Spanned
 import android.widget.TextView
@@ -18,10 +19,12 @@ class NewsDetailActivity : AppCompatActivity() {
 
     lateinit var mNewsInfo: TextView
     lateinit var retrieveTask: RetrieveNewsTask
-
+    lateinit var mToolbar: Toolbar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_news_detail)
+
+        mToolbar = findViewById(R.id.toolbar) as Toolbar
         mNewsInfo = findViewById(R.id.news_info) as TextView
         retrieveTask = RetrieveNewsTask()
 

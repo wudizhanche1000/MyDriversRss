@@ -5,7 +5,15 @@ package org.weijian.mydriversrss
  */
 
 object Constants {
-    const val RSS_ADDRESS = "http://rss.mydrivers.com/rss.aspx?Tid=1"
+    const val RSS_SIGN_ID = "RSS_SIGN_ID"
+    const val RSS_XAID = "RSS_XAID"
+    const val RSS_UDID = "RSS_UDID"
+    const val RSS_MINID = "RSS_MINID"
+    const val RSS_TID = "RSS_TID"
+    const val RSS_CID = "RSS_CID"
+    const val RSS_ADDRESS =
+            "http://dt.kkeji.com/api/2/contents?istop=0&sign=%s&xaid=%s&udid=%s&minid=%s&tid=1&cid=0"
+
     const val EXTENDED_DATA_STATUS = "org.weijian.mydriversrss.STATUS"
     const val BROADCAST_ACTION = "org.weijian.mydriversrss.BROADCAST"
 

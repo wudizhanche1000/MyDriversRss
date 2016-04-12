@@ -21,6 +21,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".NewsDetailActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName=".DisplayActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".DisplayActivity" />
+        </activity>
+
         <service
             android:name=".RssPullService"
             android:exported="false" />
@@ -31,13 +40,6 @@
             android:enabled="true"
             android:exported="false" />
 
-        <activity
-            android:name=".NewsDetailActivity"
-            android:parentActivityName=".DisplayActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".DisplayActivity" />
-        </activity>
     </application>
 
 </manifest>

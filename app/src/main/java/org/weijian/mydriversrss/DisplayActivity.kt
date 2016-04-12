@@ -24,8 +24,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import java.util.*
 
 class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener, LoaderManager.LoaderCallbacks<Cursor> {
+
     override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
         if (data != null) {
             var adapter = NewsAdapter(baseContext, data)
@@ -48,6 +50,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         mRecyclerView.swapAdapter(null, true)
     }
 
+    private lateinit var mToolbar: Toolbar
     private lateinit var mRecyclerView: RecyclerView
     private lateinit var mServiceIntent: Intent
     private lateinit var mStatusReciver: StatusReceiver
@@ -55,42 +58,69 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     private lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
     private lateinit var mAppbarLayout: AppBarLayout
     private lateinit var mStatusIntentFilter: IntentFilter
+
+    private lateinit var mSignId: String
+    private lateinit var mXaid: String
+    private lateinit var mUdid: String
+    private lateinit var mMinid: String
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_display)
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
-        setSupportActionBar(toolbar)
 
+        // Init variables
+        mToolbar = findViewById(R.id.toolbar) as Toolbar
         mRecyclerView = findViewById(R.id.recycler_view) as RecyclerView
         mProgressBar = findViewById(R.id.progress_bar) as ProgressBar
         mSwipeRefreshLayout = findViewById(R.id.swipe_refresh) as SwipeRefreshLayout
         mAppbarLayout = findViewById(R.id.appbarLayout) as AppBarLayout
 
+
+        // Set toolbar
+        setSupportActionBar(mToolbar)
         // Set RecyclerView layoutManager
         var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
         mRecyclerView.layoutManager = linearLayoutManager
         mSwipeRefreshLayout.setOnRefreshListener(this)
 
+
+        // get or generate rss parameters
+        mSignId = savedInstanceState?.getString(Constants.RSS_SIGN_ID) ?: { Random().nextInt().toString() }()
+        mXaid = savedInstanceState?.getString(Constants.RSS_XAID) ?: {
+            // Generate random XAID
+            var stringBuilder = StringBuilder()
+            val random = Random()
+            kotlin.repeat(8) {
+                stringBuilder.append(Integer.toHexString(random.nextInt(16)))
+            }
+            stringBuilder.toString()
+        }()
+        mUdid = savedInstanceState?.getString(Constants.RSS_UDID) ?: { Random().nextLong().toString() }()
+        mMinid = savedInstanceState?.getString(Constants.RSS_MINID) ?: "0"
+
+
         // start RssPullService at startup
         mServiceIntent = Intent(this, RssPullService::class.java)
+        mServiceIntent.putExtra(Constants.RSS_MINID, mMinid)
+        mServiceIntent.putExtra(Constants.RSS_SIGN_ID, mSignId)
+        mServiceIntent.putExtra(Constants.RSS_XAID, mXaid)
+        mServiceIntent.putExtra(Constants.RSS_UDID, mUdid)
         startService(mServiceIntent)
 
-        // init receiver
+        // register broadcast receiver
         mStatusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
         mStatusIntentFilter.addCategory(Intent.CATEGORY_DEFAULT)
         mStatusReciver = StatusReceiver()
+        LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, mStatusIntentFilter)
 
         loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
         contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, NewsObserver(Handler()))
+
     }
 
-    override fun onResume() {
-        super.onResume()
-        LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, mStatusIntentFilter)
-    }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mStatusReciver)
     }
 

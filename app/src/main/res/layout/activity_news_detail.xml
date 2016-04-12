@@ -9,6 +9,8 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="org.weijian.mydriversrss.NewsDetailActivity">
 
+    <include layout="@layout/content_toolbar" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
