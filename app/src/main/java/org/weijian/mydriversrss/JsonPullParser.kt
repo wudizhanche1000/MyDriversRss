@@ -1,5 +1,6 @@
 package org.weijian.mydriversrss
 
+import android.util.Log
 import org.json.JSONObject
 
 /**
@@ -12,8 +13,9 @@ class JsonPullParser {
         try {
             var jsonObject = JSONObject(json)
             var newsListObject = jsonObject.getJSONObject("data").getJSONArray("news")
-            newsArray = Array(newsListObject.length(), { News() })
-            for (i in 0..newsListObject.length()) {
+            var size = newsListObject.length()
+            newsArray = Array(size, { News() })
+            for (i in 0..size - 1) {
                 val newsObject = newsListObject.getJSONObject(i)
                 val news = newsArray[i]
                 news.title = newsObject.getString("title")
@@ -23,12 +25,13 @@ class JsonPullParser {
                 news.editor = newsObject.getString("editor")
                 news.images = {
                     val imageObject = newsObject.getJSONArray("imgs")
-                    Array<String>(news.picCount) {
-                        imageObject.getString(it)
+                    Array<String>(imageObject.length()) { index ->
+                        imageObject.getString(index)
                     }
                 }()
             }
         } catch(e: Exception) {
+            Log.e("JsonParser", e.message)
         }
         return newsArray
     }

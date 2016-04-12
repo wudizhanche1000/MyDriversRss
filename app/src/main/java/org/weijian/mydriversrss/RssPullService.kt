@@ -34,12 +34,13 @@ class RssPullService constructor() : IntentService("RssPullService") {
             val inputStream = BufferedInputStream(httpConnection.inputStream)
             var json = String(inputStream.readBytes(), Charset.forName("UTF-8"))
             val parser = JsonPullParser()
-            val newsList = parser.parse(json)
+            val newsArray = parser.parse(json)
         } catch(e: Exception) {
             // TODO Handle SocketTimeoutException and IOException
             throw e
         }
         mBroadcastNotifier.broadcastIntentWithStatus(Constants.STATE_ACTION_RETRIEVED)
+
         mBroadcastNotifier.broadcastIntentWithStatus(Constants.STATE_ACTION_COMPLETE)
     }
 }

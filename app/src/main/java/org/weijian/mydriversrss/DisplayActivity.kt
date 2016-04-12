@@ -6,6 +6,7 @@ import android.database.ContentObserver
 import android.database.Cursor
 import android.os.Bundle
 import android.os.Handler
+import android.os.ResultReceiver
 import android.support.design.widget.AppBarLayout
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.widget.SwipeRefreshLayout
@@ -28,6 +29,11 @@ import java.util.*
 
 class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener, LoaderManager.LoaderCallbacks<Cursor> {
 
+    class NewsResultReceiver constructor(handler: Handler) : ResultReceiver(handler) {
+        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            super.onReceiveResult(resultCode, resultData)
+        }
+    }
     override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
         if (data != null) {
             var adapter = NewsAdapter(baseContext, data)
