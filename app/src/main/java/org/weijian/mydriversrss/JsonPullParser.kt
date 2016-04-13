@@ -22,6 +22,7 @@ class JsonPullParser {
                 news.articleId = newsObject.getInt("article_id")
                 news.sourceUrl = newsObject.getString("source_url")
                 news.picCount = newsObject.getInt("piccount")
+                news.pubTime = newsObject.getLong("pub_time")
                 news.editor = newsObject.getString("editor")
                 news.images = {
                     val imageObject = newsObject.getJSONArray("imgs")

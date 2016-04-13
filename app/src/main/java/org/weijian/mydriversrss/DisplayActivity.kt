@@ -21,6 +21,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import java.text.SimpleDateFormat
 import java.util.*
 
 class NewsResultReceiver constructor(handler: Handler, receiver: NewsReceiver) : ResultReceiver(handler) {
@@ -231,6 +232,8 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             newsHolder.titleView.text = newsItem.title
             newsHolder.titleView.paint?.isFakeBoldText = true
             newsHolder.titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
+            val dateFormat = SimpleDateFormat("MM-dd HH:mm")
+            newsHolder.pubDateView.text = dateFormat.format(Date(newsItem.pubTime * 1000))
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
