@@ -2,6 +2,8 @@ package org.weijian.mydriversrss
 
 import android.app.IntentService
 import android.content.Intent
+import android.os.Bundle
+import android.os.ResultReceiver
 import java.io.BufferedInputStream
 import java.net.URL
 import java.nio.charset.Charset
@@ -24,6 +26,7 @@ class RssPullService constructor() : IntentService("RssPullService") {
         val udId = intent.getStringExtra(Constants.RSS_UDID)
         val minId = intent.getStringExtra(Constants.RSS_MINID)
 
+        val newsReceiver = intent.getParcelableExtra<ResultReceiver>(NewsResultReceiver.NEWS_RESULT_RECEIVER)
         mBroadcastNotifier = BroadcastNotifier(this)
         val url = URL(Constants.RSS_ADDRESS.format(signId, xaId, udId, minId))
         mBroadcastNotifier.broadcastIntentWithStatus(Constants.STATE_ACTION_STARTING)
@@ -35,6 +38,9 @@ class RssPullService constructor() : IntentService("RssPullService") {
             var json = String(inputStream.readBytes(), Charset.forName("UTF-8"))
             val parser = JsonPullParser()
             val newsArray = parser.parse(json)
+            val result = Bundle()
+            result.putSerializable(Constants.NEWS_ITEM_RESULT, newsArray)
+            newsReceiver.send(Constants.STATE_FETCH_COMPLETE, result)
         } catch(e: Exception) {
             // TODO Handle SocketTimeoutException and IOException
             throw e

@@ -1,9 +1,9 @@
 package org.weijian.mydriversrss
 
-import android.app.LoaderManager
-import android.content.*
-import android.database.ContentObserver
-import android.database.Cursor
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.ResultReceiver
@@ -11,11 +11,7 @@ import android.support.design.widget.AppBarLayout
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.CardView
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
-import android.text.Html
+import android.support.v7.widget.*
 import android.util.Log
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -27,48 +23,38 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import java.util.*
 
-class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener, LoaderManager.LoaderCallbacks<Cursor> {
-
-    class NewsResultReceiver constructor(handler: Handler) : ResultReceiver(handler) {
-        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-            super.onReceiveResult(resultCode, resultData)
-        }
-    }
-    override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
-        if (data != null) {
-            var adapter = NewsAdapter(baseContext, data)
-            mRecyclerView.swapAdapter(adapter, false)
-            if (mProgressBar.visibility != View.GONE)
-                mProgressBar.visibility = View.GONE
-        }
+class NewsResultReceiver constructor(handler: Handler, receiver: NewsReceiver) : ResultReceiver(handler) {
+    companion object {
+        const val NEWS_RESULT_RECEIVER = "NEWS_RESULT_RECEIVER"
     }
 
-    override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor>? {
-        when (id) {
-            NewsProviderContract.NEWS_ALL -> {
-                return CursorLoader(baseContext, NewsProviderContract.NEWS_CONTENT_URI, null, null, null, null)
-            }
-            else -> return null
-        }
+    interface NewsReceiver {
+        fun onReceiveResult(resultCode: Int, resultData: Bundle?)
     }
 
-    override fun onLoaderReset(loader: Loader<Cursor>?) {
-        mRecyclerView.swapAdapter(null, true)
+    var receiver: NewsReceiver
+
+    init {
+        this.receiver = receiver
     }
+
+    override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+        super.onReceiveResult(resultCode, resultData)
+        receiver.onReceiveResult(resultCode, resultData)
+    }
+}
+
+class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
+
 
     private lateinit var mToolbar: Toolbar
     private lateinit var mRecyclerView: RecyclerView
-    private lateinit var mServiceIntent: Intent
     private lateinit var mStatusReciver: StatusReceiver
     private lateinit var mProgressBar: ProgressBar
     private lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
     private lateinit var mAppbarLayout: AppBarLayout
     private lateinit var mStatusIntentFilter: IntentFilter
 
-    private lateinit var mSignId: String
-    private lateinit var mXaid: String
-    private lateinit var mUdid: String
-    private lateinit var mMinid: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,17 +68,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         mAppbarLayout = findViewById(R.id.appbarLayout) as AppBarLayout
 
 
-        // Set toolbar
-        setSupportActionBar(mToolbar)
-        // Set RecyclerView layoutManager
-        var linearLayoutManager = LinearLayoutManager(this@DisplayActivity.baseContext)
-        mRecyclerView.layoutManager = linearLayoutManager
-        mSwipeRefreshLayout.setOnRefreshListener(this)
-
-
         // get or generate rss parameters
-        mSignId = savedInstanceState?.getString(Constants.RSS_SIGN_ID) ?: { Random().nextInt().toString() }()
-        mXaid = savedInstanceState?.getString(Constants.RSS_XAID) ?: {
+        val signId = savedInstanceState?.getString(Constants.RSS_SIGN_ID) ?: { Random().nextInt().toString() }()
+        val xaId = savedInstanceState?.getString(Constants.RSS_XAID) ?: {
             // Generate random XAID
             var stringBuilder = StringBuilder()
             val random = Random()
@@ -101,17 +79,26 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             }
             stringBuilder.toString()
         }()
-        mUdid = savedInstanceState?.getString(Constants.RSS_UDID) ?: { Random().nextLong().toString() }()
-        mMinid = savedInstanceState?.getString(Constants.RSS_MINID) ?: "0"
+        val udId = savedInstanceState?.getString(Constants.RSS_UDID) ?: { Random().nextLong().toString() }()
+        val minId = savedInstanceState?.getString(Constants.RSS_MINID) ?: "0"
 
 
-        // start RssPullService at startup
-        mServiceIntent = Intent(this, RssPullService::class.java)
-        mServiceIntent.putExtra(Constants.RSS_MINID, mMinid)
-        mServiceIntent.putExtra(Constants.RSS_SIGN_ID, mSignId)
-        mServiceIntent.putExtra(Constants.RSS_XAID, mXaid)
-        mServiceIntent.putExtra(Constants.RSS_UDID, mUdid)
-        startService(mServiceIntent)
+        // Set toolbar
+        setSupportActionBar(mToolbar)
+        // Set RecyclerView layoutManager
+        var linearLayoutManager = LinearLayoutManager(this.baseContext)
+        mRecyclerView.layoutManager = linearLayoutManager
+        mRecyclerView.itemAnimator = DefaultItemAnimator()
+        val adapter = NewsAdapter(this.baseContext, signId = signId, xaId = xaId, minId = minId, udId = udId)
+        adapter.setHasStableIds(true)
+        mRecyclerView.adapter = adapter
+
+        // Set RefreshLayout Listener
+        mSwipeRefreshLayout.setOnRefreshListener(this)
+
+
+
+
 
         // register broadcast receiver
         mStatusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
@@ -119,8 +106,8 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         mStatusReciver = StatusReceiver()
         LocalBroadcastManager.getInstance(this).registerReceiver(mStatusReciver, mStatusIntentFilter)
 
-        loaderManager.initLoader(NewsProviderContract.NEWS_ALL, null, this)
-        contentResolver.registerContentObserver(NewsProviderContract.NEWS_CONTENT_URI, true, NewsObserver(Handler()))
+        // TODO delete this after test
+        mProgressBar.visibility = View.GONE
 
     }
 
@@ -137,21 +124,10 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
     }
 
     override fun onRefresh() {
-        startService(mServiceIntent)
+        val adapter = mRecyclerView.adapter as NewsAdapter
+        adapter.refresh()
     }
 
-    fun notifyRecyclerView() {
-        mProgressBar.visibility = View.GONE
-        mSwipeRefreshLayout.isRefreshing = false
-    }
-
-
-    inner class NewsObserver constructor(handler: Handler) : ContentObserver(handler) {
-        override fun onChange(selfChange: Boolean) {
-            super.onChange(selfChange)
-            loaderManager.getLoader<Cursor>(NewsProviderContract.NEWS_ALL).forceLoad()
-        }
-    }
 
     inner class StatusReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -168,45 +144,127 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
     }
 
-    inner class NewsAdapter constructor(context: Context, newsCursor: Cursor) :
-            CursorRecyclerViewAdapter<RecyclerView.ViewHolder>(context, newsCursor) {
-        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, cursor: Cursor?) {
-            var newsHolder = viewHolder as NewsHolder
-            if (cursor != null) {
-                newsHolder.titleView.text = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_TITLE))
-                newsHolder.titleView.paint?.isFakeBoldText = true
-                newsHolder.titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
-                var description = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_DESCRIPTION))
-                newsHolder.descriptionView.text = Html.fromHtml(description).toString().substring(0..25) + "..."
-                newsHolder.descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15F)
+    inner class NewsAdapter constructor(val context: Context, var signId: String, var xaId: String
+                                        , var minId: String, var udId: String) :
+            RecyclerView.Adapter<RecyclerView.ViewHolder>(), NewsResultReceiver.NewsReceiver {
+        private lateinit var mServiceIntent: Intent
 
-                newsHolder.guid = cursor.getString(cursor.getColumnIndex(NewsProvider.COLUMN_GUID))
-                newsHolder.cardView.setOnClickListener {
-                    var intent = Intent(baseContext, NewsDetailActivity::class.java)
-                    intent.putExtra(NewsDetailActivity.NEWS_URL, newsHolder.guid)
-                    startActivity(intent)
+        var newsList: MutableList<News> = mutableListOf()
+
+        private var mResultReceiver: NewsResultReceiver
+
+
+        init {
+            mResultReceiver = NewsResultReceiver(Handler(), receiver = this)
+            mServiceIntent = Intent(context, RssPullService::class.java)
+            mServiceIntent.putExtra(Constants.RSS_MINID, minId)
+            mServiceIntent.putExtra(Constants.RSS_SIGN_ID, signId)
+            mServiceIntent.putExtra(Constants.RSS_XAID, xaId)
+            mServiceIntent.putExtra(Constants.RSS_UDID, udId)
+            mServiceIntent.putExtra(NewsResultReceiver.NEWS_RESULT_RECEIVER, mResultReceiver)
+            refresh()
+        }
+
+        fun refresh() {
+            // start RssPullService at startup
+            startService(mServiceIntent)
+        }
+
+        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            when (resultCode) {
+                Constants.STATE_FETCH_COMPLETE -> {
+                    if (resultData != null) {
+                        val newsArray = resultData.getSerializable(Constants.NEWS_ITEM_RESULT) as Array<News>
+                        val new = mutableSetOf(*newsArray)
+                        new.removeAll(newsList)
+                        val changeList = new.toMutableList()
+                        Collections.sort(changeList) { lhs, rhs ->
+                            when {
+                                lhs.pubTime > rhs.pubTime -> 1
+                                lhs.pubTime < rhs.pubTime -> -1
+                                else -> 0
+                            }
+                        }
+                        Collections.reverse(changeList)
+
+                        for (item in changeList) {
+                            newsList.add(0, item)
+                        }
+
+                        if (changeList.size > 0)
+                            notifyItemRangeInserted(0, changeList.size)
+                        //                        notifyDataSetChanged()
+                    }
                 }
+            }
+            Log.d("RECEIVER", resultData.toString())
+        }
+
+        override fun getItemCount(): Int {
+            return newsList.size
+        }
+
+        override fun getItemViewType(position: Int): Int {
+            return when (newsList[position].images.size) {
+                0 -> 0
+                1 -> 1
+                else -> 2
             }
         }
 
-        inner class NewsHolder constructor(var cardView: CardView) : RecyclerView.ViewHolder(cardView) {
-            lateinit var titleView: TextView
-            lateinit var descriptionView: TextView
-            lateinit var newsImageView: ImageView
-            lateinit var guid: String
+        override fun getItemId(position: Int): Long {
+            return newsList[position].articleId.toLong()
+        }
 
-            init {
-                titleView = cardView.findViewById(R.id.news_title) as TextView
-                descriptionView = cardView.findViewById(R.id.news_description) as TextView
-                newsImageView = cardView.findViewById(R.id.news_image) as ImageView
+        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+            var newsHolder = viewHolder as NewsHolder
+            val newsItem = newsList[position]
+            val itemType = newsItem.images.size
+            //TODO Add handler when itemType is not 0
+            when (itemType) {
+                1 -> {
+                }
+                2 -> {
+
+                }
             }
+            newsHolder.titleView.text = newsItem.title
+            newsHolder.titleView.paint?.isFakeBoldText = true
+            newsHolder.titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
-            var newsCard = LayoutInflater.from(this@DisplayActivity).inflate(R.layout.newscard_view, parent, false) as CardView
-            var newsHolder = NewsHolder(newsCard)
+            val layoutId = when (viewType) {
+                0 -> R.layout.news_item
+                1 -> R.layout.news_item_image
+                else -> R.layout.news_item_multi_images
+            }
+            var newsCard = LayoutInflater.from(context).inflate(layoutId, parent, false) as CardView
+            var newsHolder = NewsHolder(newsCard, viewType)
             return newsHolder
         }
 
+        inner class NewsHolder constructor(var cardView: CardView, viewType: Int) : RecyclerView.ViewHolder(cardView) {
+            lateinit var titleView: TextView
+            lateinit var descriptionView: TextView
+            lateinit var newsImageView: ImageView
+            lateinit var commentCountView: TextView
+            lateinit var pubDateView: TextView
+            lateinit var artileId: String
+
+            init {
+                titleView = cardView.findViewById(R.id.news_title) as TextView
+                pubDateView = cardView.findViewById(R.id.news_pub_date) as TextView
+                commentCountView = cardView.findViewById(R.id.news_comments_count) as TextView
+                //TODO Add handler when itemType is not 0
+                when (viewType) {
+                    1 -> {
+
+                    }
+                    2 -> {
+                    }
+                }
+            }
+        }
     }
 }

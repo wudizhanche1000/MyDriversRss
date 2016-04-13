@@ -33,4 +33,9 @@ object Constants {
     const val STATE_ACTION_WRITING = 3
     const val STATE_ACTION_COMPLETE = 4
     const val STATE_ACTION_FAILED = 5
+
+    const val NEWS_ITEM_RESULT="NEWS_ITEM_RESULT" // represents result tag in RssPullService
+
+    const val STATE_FETCH_COMPLETE = 0
+    const val STATE_FETCH_FAILED = 1
 }
