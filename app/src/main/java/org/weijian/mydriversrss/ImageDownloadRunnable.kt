@@ -8,78 +8,81 @@ import java.net.URLConnection
  * Created by weijian on 16-4-14.
  */
 
-class ImageDownloadRunnable constructor(downloadTask: ImageDownloadTask) : Runnable {
-    var mDownloadTask: ImageDownloadTask get set
+class ImageDownloadRunnable constructor(task: ImageTask) : Runnable {
+    var mTask: ImageTask get set
+
+    var buffer: ByteArray
+    var url: String
 
     init {
-        mDownloadTask = downloadTask
+        mTask = task
+        buffer = task.byteBuffer
+        url = task.url
     }
+
 
     override fun run() {
         // Set current thread to background
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
         // Get buffer from DownloadTask
-        var buffer = mDownloadTask.byteBuffer
         var bufferLeft = buffer.size
         if (Thread.interrupted()) {
-            mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_INTERRUPTED)
+            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
             return
         }
         var httpConnection: URLConnection? = null
         try {
-            httpConnection = URL(mDownloadTask.url).openConnection()
+            httpConnection = URL(url).openConnection()
             httpConnection.setRequestProperty("User-Agent", Constants.USER_AGENT)
             var inputStream = httpConnection.inputStream
             val contentSize = httpConnection.contentLength
             if (contentSize == -1) {
                 outer@do {
                     while (bufferLeft > 0) {
-                        val count = inputStream.read(buffer, mDownloadTask.byteOffset, bufferLeft)
+                        val count = inputStream.read(buffer, mTask.byteOffset, bufferLeft)
                         if (count < 0) {
                             break@outer
                         }
-                        mDownloadTask.byteOffset += count
+                        mTask.byteOffset += count
                         bufferLeft -= count
                         if (Thread.interrupted()) {
-                            mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_INTERRUPTED)
+                            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
                             return
                         }
                     }
                     if (Thread.interrupted()) {
-                        mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_INTERRUPTED)
+                        mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
                         return
                     }
-                    buffer = mDownloadTask.expandBuffer()
-                    bufferLeft = buffer.size - mDownloadTask.byteOffset
+                    buffer = mTask.expandBuffer()
+                    bufferLeft = buffer.size - mTask.byteOffset
                 } while (true)
             } else {
                 // Expanded buffer if buffer isn't big enough
                 if (buffer.size < contentSize) {
                     buffer = ByteArray(contentSize)
-                    mDownloadTask.byteBuffer = buffer
+                    mTask.byteBuffer = buffer
                 }
-                mDownloadTask.byteOffset = 0
+                mTask.byteOffset = 0
                 bufferLeft = contentSize
-                while (mDownloadTask.byteOffset < contentSize) {
-                    val count = inputStream.read(buffer, mDownloadTask.byteOffset, bufferLeft)
+                while (mTask.byteOffset < contentSize) {
+                    val count = inputStream.read(buffer, mTask.byteOffset, bufferLeft)
                     if (count < 0) {
                         throw EOFException()
                     }
-                    mDownloadTask.byteOffset += count
+                    mTask.byteOffset += count
                     bufferLeft -= count
                     if (Thread.interrupted()) {
-                        mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_INTERRUPTED)
+                        mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
                         return
                     }
                 }
             }
-            mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_COMPLETE)
+            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_COMPLETE)
         } catch (e: Exception) {
-            mDownloadTask.taskFinish(ImageDownloadTask.TASK_DOWNLOAD_FAILED)
+            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_FAILED)
         } finally {
             httpConnection?.inputStream?.close()
         }
     }
-
-
 }

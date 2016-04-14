@@ -1,19 +1,13 @@
 package org.weijian.mydriversrss
 
-import android.os.Handler
-import android.util.Log
-
 /**
  * Created by weijian on 16-4-14.
  */
-class ImageDownloadTask {
-    class TaskHandler : Handler() {
-
-    }
+class ImageTask constructor(var imageManager: ImageManager) {
 
     companion object {
-        // 32KB for buffer
-        const val BUFFER_SIZE = 32 * 1024
+        // 16 KB for buffer
+        const val BUFFER_SIZE = 16 * 1024
         const val READ_BUFFER_SIZE = 4 * 1024
         const val MAXIMUM_BUFFER_SIZE = 128 * 1024
 
@@ -22,21 +16,25 @@ class ImageDownloadTask {
         const val TASK_DOWNLOAD_INTERRUPTED = 2
     }
 
+    lateinit var decodeRunnable: ImageDecodeRunnable
+    lateinit var downloadRunnable: ImageDownloadRunnable
 
-    var byteBuffer: ByteArray get set
+    lateinit var byteBuffer: ByteArray get set
+
     var byteOffset: Int = 0
         get set
-    var url: String? = null
+    lateinit var url: String
         get set
 
-    var downloadRunnable: ImageDownloadRunnable? = null
-
     init {
-        byteBuffer = ByteArray(BUFFER_SIZE)
     }
 
-    fun initializeTask(url: String, byteCache: ByteArray) {
 
+    fun initializeTask(url: String) {
+        this.url = url
+        byteBuffer = ByteArray(BUFFER_SIZE)
+        downloadRunnable = ImageDownloadRunnable(this)
+        decodeRunnable = ImageDecodeRunnable(this)
     }
 
     /**
@@ -51,14 +49,14 @@ class ImageDownloadTask {
         return byteBuffer
     }
 
-
-    fun taskFinish(state: Int) {
-
-        Log.d("DOWNLOAD_TASK", "$state ${this.byteOffset}")
-        if (byteBuffer.size > MAXIMUM_BUFFER_SIZE) {
-            byteBuffer = ByteArray(BUFFER_SIZE)
-        }
+    fun getImageData(): ByteArray {
+        val newBuffer = ByteArray(this.byteOffset)
+        System.arraycopy(byteBuffer, 0, newBuffer, 0, byteOffset)
+        return newBuffer
     }
 
+    fun taskFinish(state: Int) {
+        imageManager.handleState(this, state)
+    }
 
 }
