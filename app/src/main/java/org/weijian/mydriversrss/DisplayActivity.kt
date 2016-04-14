@@ -225,8 +225,10 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             when (itemType) {
                 1 -> {
                 }
-                2 -> {
-
+                else -> {
+                    for (imageUrl in newsItem.images) {
+                        ImageManager.startDownload(imageUrl)
+                    }
                 }
             }
             newsHolder.titleView.text = newsItem.title
@@ -264,7 +266,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
                     1 -> {
 
                     }
-                    2 -> {
+                    else -> {
                     }
                 }
             }

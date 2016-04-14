@@ -1,10 +1,14 @@
 package org.weijian.mydriversrss
 
+import android.os.Build
+import java.util.*
+
 /**
  * Created by weijian on 16-4-5.
  */
 
 object Constants {
+    val USER_AGENT = "Mozilla/5.0 (Linux; Android ${android.os.Build.VERSION.RELEASE}; ${Locale.getDefault().toString()}; ${Build.DEVICE} Build/${Build.ID})"
     const val RSS_SIGN_ID = "RSS_SIGN_ID"
     const val RSS_XAID = "RSS_XAID"
     const val RSS_UDID = "RSS_UDID"
@@ -34,7 +38,7 @@ object Constants {
     const val STATE_ACTION_COMPLETE = 4
     const val STATE_ACTION_FAILED = 5
 
-    const val NEWS_ITEM_RESULT="NEWS_ITEM_RESULT" // represents result tag in RssPullService
+    const val NEWS_ITEM_RESULT = "NEWS_ITEM_RESULT" // represents result tag in RssPullService
 
     const val STATE_FETCH_COMPLETE = 0
     const val STATE_FETCH_FAILED = 1
