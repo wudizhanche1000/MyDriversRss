@@ -21,6 +21,9 @@ object Constants {
     const val EXTENDED_DATA_STATUS = "org.weijian.mydriversrss.STATUS"
     const val BROADCAST_ACTION = "org.weijian.mydriversrss.BROADCAST"
 
+    const val NEWS_ITEM_TYPE_NO_IMAGE = 0
+    const val NEWS_ITEM_TYPE_IMAGE = 1
+    const val NEWS_ITEM_TYPE_MULTI_IMAGES = 3
 
     const val RSS_ITEM = "ITEM"
     const val RSS_ITEM_TITLE = "TITLE"
@@ -42,4 +45,8 @@ object Constants {
 
     const val STATE_FETCH_COMPLETE = 0
     const val STATE_FETCH_FAILED = 1
+
+    const val RECYCLER_ACTION = "RECYCLER_ACTION"
+    const val RECYCLER_ACTION_GET = 0
+    const val RECYCLER_ACTION_REFRESH = 1
 }

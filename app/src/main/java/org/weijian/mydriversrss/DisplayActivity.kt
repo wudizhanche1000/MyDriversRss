@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
-import android.os.ResultReceiver
 import android.support.design.widget.AppBarLayout
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.widget.SwipeRefreshLayout
@@ -18,35 +17,12 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.*
 
-class NewsResultReceiver constructor(handler: Handler, receiver: NewsReceiver) : ResultReceiver(handler) {
-    companion object {
-        const val NEWS_RESULT_RECEIVER = "NEWS_RESULT_RECEIVER"
-    }
-
-    interface NewsReceiver {
-        fun onReceiveResult(resultCode: Int, resultData: Bundle?)
-    }
-
-    var receiver: NewsReceiver
-
-    init {
-        this.receiver = receiver
-    }
-
-    override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-        super.onReceiveResult(resultCode, resultData)
-        receiver.onReceiveResult(resultCode, resultData)
-    }
-}
-
 class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
-
 
     private lateinit var mToolbar: Toolbar
     private lateinit var mRecyclerView: RecyclerView
@@ -83,23 +59,25 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         val udId = savedInstanceState?.getString(Constants.RSS_UDID) ?: { Random().nextLong().toString() }()
         val minId = savedInstanceState?.getString(Constants.RSS_MINID) ?: "0"
 
-
         // Set toolbar
         setSupportActionBar(mToolbar)
         // Set RecyclerView layoutManager
         var linearLayoutManager = LinearLayoutManager(this.baseContext)
         mRecyclerView.layoutManager = linearLayoutManager
         mRecyclerView.itemAnimator = DefaultItemAnimator()
+        mRecyclerView.addOnScrollListener(object : EndlessOnScrollListener() {
+            override fun onScrolledToEnd(recyclerView: RecyclerView) {
+                val adapter = recyclerView.adapter as NewsAdapter
+                adapter.getMore()
+                adapter.isGetting = true
+            }
+        })
         val adapter = NewsAdapter(this.baseContext, signId = signId, xaId = xaId, minId = minId, udId = udId)
         adapter.setHasStableIds(true)
         mRecyclerView.adapter = adapter
 
         // Set RefreshLayout Listener
         mSwipeRefreshLayout.setOnRefreshListener(this)
-
-
-
-
 
         // register broadcast receiver
         mStatusIntentFilter = IntentFilter(Constants.BROADCAST_ACTION)
@@ -151,14 +129,13 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         private lateinit var mServiceIntent: Intent
 
         var newsList: MutableList<News> = mutableListOf()
-
+        var isGetting: Boolean = false
+            get set
         private var mResultReceiver: NewsResultReceiver
-
 
         init {
             mResultReceiver = NewsResultReceiver(Handler(), receiver = this)
             mServiceIntent = Intent(context, RssPullService::class.java)
-            mServiceIntent.putExtra(Constants.RSS_MINID, minId)
             mServiceIntent.putExtra(Constants.RSS_SIGN_ID, signId)
             mServiceIntent.putExtra(Constants.RSS_XAID, xaId)
             mServiceIntent.putExtra(Constants.RSS_UDID, udId)
@@ -168,37 +145,56 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
         fun refresh() {
             // start RssPullService at startup
+            mServiceIntent.putExtra(Constants.RSS_MINID, 0)
+            mServiceIntent.putExtra(Constants.RECYCLER_ACTION, Constants.RECYCLER_ACTION_REFRESH)
             startService(mServiceIntent)
         }
 
+        fun getMore() {
+            if (!isGetting) {
+                minId = newsList.last().articleId.toString()
+                mServiceIntent.putExtra(Constants.RSS_MINID, minId)
+                mServiceIntent.putExtra(Constants.RECYCLER_ACTION, Constants.RECYCLER_ACTION_GET)
+                startService(mServiceIntent)
+            }
+        }
+
+        /**
+         *  Implements NewsResultReceiver.Receiver
+         * */
         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
             when (resultCode) {
                 Constants.STATE_FETCH_COMPLETE -> {
                     if (resultData != null) {
+                        val action = resultData.getInt(Constants.RECYCLER_ACTION)
+                        // Refresh
                         val newsArray = resultData.getSerializable(Constants.NEWS_ITEM_RESULT) as Array<News>
-                        val new = mutableSetOf(*newsArray)
-                        new.removeAll(newsList)
-                        val changeList = new.toMutableList()
-                        Collections.sort(changeList) { lhs, rhs ->
-                            when {
-                                lhs.pubTime > rhs.pubTime -> 1
-                                lhs.pubTime < rhs.pubTime -> -1
-                                else -> 0
+                        if (action == Constants.RECYCLER_ACTION_REFRESH) {
+                            val new = mutableSetOf(*newsArray)
+                            new.removeAll(newsList)
+                            val changeList = new.toMutableList()
+                            Collections.sort(changeList) { lhs, rhs ->
+                                when {
+                                    lhs.pubTime > rhs.pubTime -> 1
+                                    lhs.pubTime < rhs.pubTime -> -1
+                                    else -> 0
+                                }
                             }
+                            for (item in changeList) {
+                                newsList.add(0, item)
+                            }
+                            if (changeList.size > 0)
+                                notifyItemRangeInserted(0, changeList.size)
+                        } else if (action == Constants.RECYCLER_ACTION_GET) {
+                            //Get more data
+                            val size = newsList.size
+                            newsList.addAll(newsArray)
+                            notifyItemRangeInserted(size - 1, newsList.size - size)
+                            isGetting = false
                         }
-                        Collections.reverse(changeList)
-
-                        for (item in changeList) {
-                            newsList.add(0, item)
-                        }
-
-                        if (changeList.size > 0)
-                            notifyItemRangeInserted(0, changeList.size)
-                        //                        notifyDataSetChanged()
                     }
                 }
             }
-            Log.d("RECEIVER", resultData.toString())
         }
 
         override fun getItemCount(): Int {
@@ -206,11 +202,7 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
         }
 
         override fun getItemViewType(position: Int): Int {
-            return when (newsList[position].images.size) {
-                0 -> 0
-                1 -> 1
-                else -> 2
-            }
+            return newsList[position].images.size
         }
 
         override fun getItemId(position: Int): Long {
@@ -222,13 +214,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
             val newsItem = newsList[position]
             val itemType = newsItem.images.size
             //TODO Add handler when itemType is not 0
-            when (itemType) {
-                1 -> {
-                }
-                else -> {
-                    for (imageUrl in newsItem.images) {
-                        ImageManager.startDownload(imageUrl)
-                    }
+            if (newsHolder.imageViews != null) {
+                for (i in 0..newsHolder.imageViews!!.size - 1) {
+                    newsHolder.imageViews?.get(i)?.imageUrl = newsItem.images[i]
                 }
             }
             newsHolder.titleView.text = newsItem.title
@@ -240,9 +228,10 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
             val layoutId = when (viewType) {
-                0 -> R.layout.news_item
-                1 -> R.layout.news_item_image
-                else -> R.layout.news_item_multi_images
+                Constants.NEWS_ITEM_TYPE_NO_IMAGE -> R.layout.news_item
+                Constants.NEWS_ITEM_TYPE_IMAGE -> R.layout.news_item_image
+                Constants.NEWS_ITEM_TYPE_MULTI_IMAGES -> R.layout.news_item_multi_images
+                else -> 0
             }
             var newsCard = LayoutInflater.from(context).inflate(layoutId, parent, false) as CardView
             var newsHolder = NewsHolder(newsCard, viewType)
@@ -251,11 +240,9 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
 
         inner class NewsHolder constructor(var cardView: CardView, viewType: Int) : RecyclerView.ViewHolder(cardView) {
             lateinit var titleView: TextView
-            lateinit var descriptionView: TextView
-            lateinit var newsImageView: ImageView
             lateinit var commentCountView: TextView
             lateinit var pubDateView: TextView
-            lateinit var artileId: String
+            var imageViews: Array<AsyncImageView>? = null
 
             init {
                 titleView = cardView.findViewById(R.id.news_title) as TextView
@@ -263,10 +250,15 @@ class DisplayActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListene
                 commentCountView = cardView.findViewById(R.id.news_comments_count) as TextView
                 //TODO Add handler when itemType is not 0
                 when (viewType) {
-                    1 -> {
-
+                    Constants.NEWS_ITEM_TYPE_IMAGE -> {
+                        imageViews = arrayOf(cardView.findViewById(R.id.news_image) as AsyncImageView)
                     }
-                    else -> {
+                    Constants.NEWS_ITEM_TYPE_MULTI_IMAGES -> {
+                        imageViews = arrayOf(
+                                cardView.findViewById(R.id.news_image1) as AsyncImageView,
+                                cardView.findViewById(R.id.news_image2) as AsyncImageView,
+                                cardView.findViewById(R.id.news_image3) as AsyncImageView
+                        )
                     }
                 }
             }

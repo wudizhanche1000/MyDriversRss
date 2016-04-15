@@ -1,8 +1,8 @@
 package org.weijian.mydriversrss
 
 import java.io.EOFException
+import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLConnection
 
 /**
  * Created by weijian on 16-4-14.
@@ -27,12 +27,12 @@ class ImageDownloadRunnable constructor(task: ImageTask) : Runnable {
         // Get buffer from DownloadTask
         var bufferLeft = buffer.size
         if (Thread.interrupted()) {
-            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
+            mTask.taskFinish(ImageTask.TASK_INTERRUPTED)
             return
         }
-        var httpConnection: URLConnection? = null
+        var httpConnection: HttpURLConnection? = null
         try {
-            httpConnection = URL(url).openConnection()
+            httpConnection = URL(url).openConnection() as HttpURLConnection
             httpConnection.setRequestProperty("User-Agent", Constants.USER_AGENT)
             var inputStream = httpConnection.inputStream
             val contentSize = httpConnection.contentLength
@@ -46,12 +46,12 @@ class ImageDownloadRunnable constructor(task: ImageTask) : Runnable {
                         mTask.byteOffset += count
                         bufferLeft -= count
                         if (Thread.interrupted()) {
-                            mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
+                            mTask.taskFinish(ImageTask.TASK_INTERRUPTED)
                             return
                         }
                     }
                     if (Thread.interrupted()) {
-                        mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
+                        mTask.taskFinish(ImageTask.TASK_INTERRUPTED)
                         return
                     }
                     buffer = mTask.expandBuffer()
@@ -73,7 +73,7 @@ class ImageDownloadRunnable constructor(task: ImageTask) : Runnable {
                     mTask.byteOffset += count
                     bufferLeft -= count
                     if (Thread.interrupted()) {
-                        mTask.taskFinish(ImageTask.TASK_DOWNLOAD_INTERRUPTED)
+                        mTask.taskFinish(ImageTask.TASK_INTERRUPTED)
                         return
                     }
                 }
@@ -82,7 +82,7 @@ class ImageDownloadRunnable constructor(task: ImageTask) : Runnable {
         } catch (e: Exception) {
             mTask.taskFinish(ImageTask.TASK_DOWNLOAD_FAILED)
         } finally {
-            httpConnection?.inputStream?.close()
+            httpConnection?.disconnect()
         }
     }
 }

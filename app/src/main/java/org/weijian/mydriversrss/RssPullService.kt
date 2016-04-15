@@ -20,12 +20,11 @@ class RssPullService constructor() : IntentService("RssPullService") {
 
     private lateinit var mBroadcastNotifier: BroadcastNotifier
     override fun onHandleIntent(intent: Intent) {
-
         val signId = intent.getStringExtra(Constants.RSS_SIGN_ID)
         val xaId = intent.getStringExtra(Constants.RSS_XAID)
         val udId = intent.getStringExtra(Constants.RSS_UDID)
         val minId = intent.getStringExtra(Constants.RSS_MINID)
-
+        val action = intent.getIntExtra(Constants.RECYCLER_ACTION, Constants.RECYCLER_ACTION_GET)
         val newsReceiver = intent.getParcelableExtra<ResultReceiver>(NewsResultReceiver.NEWS_RESULT_RECEIVER)
         mBroadcastNotifier = BroadcastNotifier(this)
         val url = URL(Constants.RSS_ADDRESS.format(signId, xaId, udId, minId))
@@ -39,6 +38,8 @@ class RssPullService constructor() : IntentService("RssPullService") {
             val parser = JsonPullParser()
             val newsArray = parser.parse(json)
             val result = Bundle()
+            // Put action into result bundle, and receiver could decide what to do according to it.
+            result.putInt(Constants.RECYCLER_ACTION, action)
             result.putSerializable(Constants.NEWS_ITEM_RESULT, newsArray)
             newsReceiver.send(Constants.STATE_FETCH_COMPLETE, result)
         } catch(e: Exception) {
@@ -46,7 +47,6 @@ class RssPullService constructor() : IntentService("RssPullService") {
             throw e
         }
         mBroadcastNotifier.broadcastIntentWithStatus(Constants.STATE_ACTION_RETRIEVED)
-
         mBroadcastNotifier.broadcastIntentWithStatus(Constants.STATE_ACTION_COMPLETE)
     }
 }

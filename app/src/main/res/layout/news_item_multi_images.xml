@@ -8,12 +8,6 @@
         android:layout_width="match_parent"
         android:layout_height="180dp">
 
-        <ImageView
-            android:id="@+id/news_image"
-            android:layout_width="110dp"
-            android:layout_height="110dp"
-            android:contentDescription="@string/news_image_description" />
-
         <TextView
             android:id="@+id/news_title"
             android:layout_width="wrap_content"
@@ -21,10 +15,39 @@
             android:layout_toEndOf="@id/news_image"
             android:layout_toRightOf="@id/news_image" />
 
+        <LinearLayout
+            android:id="@+id/images"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/news_title"
+            android:weightSum="3">
+
+            <org.weijian.mydriversrss.AsyncImageView
+                android:id="@+id/news_image1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <org.weijian.mydriversrss.AsyncImageView
+                android:id="@+id/news_image2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <org.weijian.mydriversrss.AsyncImageView
+                android:id="@+id/news_image3"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/news_pub_date"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_below="@id/images"
+            android:gravity="bottom" />
 
         <TextView
             android:id="@+id/news_comments_count"

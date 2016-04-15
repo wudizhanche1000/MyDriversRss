@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="120dp">
 
-        <ImageView
+        <org.weijian.mydriversrss.AsyncImageView
             android:id="@+id/news_image"
             android:layout_width="110dp"
             android:layout_height="110dp"
