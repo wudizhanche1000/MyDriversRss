@@ -38,7 +38,11 @@ object ImageManager {
     init {
         mHandler = DownloadHandler(this)
         mListeners = HashMap()
-        mCache = LruCache(MEMORY_CACHE_SIZE)
+        mCache = object : LruCache<String, Bitmap>(MEMORY_CACHE_SIZE) {
+            override fun sizeOf(key: String, value: Bitmap): Int {
+                return value.byteCount
+            }
+        }
         mDownloadQueue = LinkedBlockingQueue()
         mThreadPool = ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_LIVE_TIME, TimeUnit.SECONDS,
                 mDownloadQueue)
