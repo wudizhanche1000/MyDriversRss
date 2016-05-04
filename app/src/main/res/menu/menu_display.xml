@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="org.weijian.mydriversrss.MainActivity">
+    tools:mContext="org.weijian.mydriversrss.MainActivity">
     <item android:id="@+id/menu_refresh"
         android:title="@string/menu_refresh"
         app:showAsAction="never"

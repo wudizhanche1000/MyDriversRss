@@ -5,12 +5,13 @@
     android:id="@+id/relative_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FAFAFA"
     android:paddingBottom="8dp"
     android:paddingLeft="8dp"
     android:paddingRight="8dp"
     android:paddingTop="8dp"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".DisplayActivity"
+    tools:mContext=".activity.DisplayActivity"
     tools:showIn="@layout/activity_display">
 
     <ProgressBar

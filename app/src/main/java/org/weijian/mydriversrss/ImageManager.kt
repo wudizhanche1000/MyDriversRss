@@ -86,7 +86,7 @@ object ImageManager {
         mListeners.remove(url)
     }
 
-    fun getBitmap(url: String): Bitmap? {
+    public fun getBitmap(url: String): Bitmap? {
         val md5Hex = getHexString(url)
         val bitmap = mCache.get(md5Hex)
         if (bitmap != null) {
@@ -115,11 +115,11 @@ object ImageManager {
             val task = msg.obj as ImageTask
             when (msg.what) {
                 ImageTask.TASK_DOWNLOAD_COMPLETE -> {
+                    val imageData = task.getImageData()
+                    val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+                    mCache.put(getHexString(task.url), bitmap)
                     if (mListeners.containsKey(task.url)) {
                         val listener = mListeners[task.url]
-                        val imageData = task.getImageData()
-                        val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-                        mCache.put(getHexString(task.url), bitmap)
                         listener?.onComplete(task.url, bitmap)
                     }
                 }

@@ -15,9 +15,7 @@
         <TextView
             android:id="@+id/news_title"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/news_image"
-            android:layout_toRightOf="@id/news_image" />
+            android:layout_height="wrap_content" />
 
         <LinearLayout
             android:id="@+id/images"
@@ -27,22 +25,22 @@
             android:layout_marginTop="4dp"
             android:weightSum="3">
 
-            <org.weijian.mydriversrss.AsyncImageView
+            <ImageView
                 android:id="@+id/news_image1"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1" />
 
-            <org.weijian.mydriversrss.AsyncImageView
+            <ImageView
                 android:id="@+id/news_image2"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1" />
 
-            <org.weijian.mydriversrss.AsyncImageView
+            <ImageView
                 android:id="@+id/news_image3"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1" />
 
         </LinearLayout>
