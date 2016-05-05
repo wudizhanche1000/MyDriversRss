@@ -70,7 +70,7 @@ class ImageTask constructor(var imageManager: ImageManager) {
     }
 
     fun taskFinish(state: Int) {
-        imageManager.handleState(this, state)
+//        imageManager.handleState(this, state)
     }
 
 }

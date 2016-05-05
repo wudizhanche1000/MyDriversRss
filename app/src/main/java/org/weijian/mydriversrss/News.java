@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 
-public class News {
+public class News implements Comparable<News> {
 
     @SerializedName("article_id")
     @Expose
@@ -534,4 +534,12 @@ public class News {
     }
 
 
+    @Override
+    public int compareTo(News another) {
+        if (this.getArticleId() == another.getArticleId()) {
+            return 0;
+        }
+        // latest news have big article id, so this could make latest news the 1st order
+        return this.getArticleId() > another.getArticleId() ? -1 : 1;
+    }
 }

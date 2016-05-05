@@ -20,7 +20,7 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import org.weijian.mydriversrss.*
-import org.weijian.mydriversrss.view.AsyncImageView
+//import org.weijian.mydriversrss.view.AsyncImageView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -218,11 +218,11 @@ class DisplayAactivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListen
             val newsItem = newsList[position]
 //            val itemType = newsItem.images.size
             //TODO Add handler when itemType is not 0
-            if (newsHolder.imageViews != null) {
-                for (i in 0..newsHolder.imageViews!!.size - 1) {
-//                    newsHolder.imageViews?.get(i)?.imageUrl = newsItem.images[i]
-                }
-            }
+//            if (newsHolder.imageViews != null) {
+//                for (i in 0..newsHolder.imageViews!!.size - 1) {
+////                    newsHolder.imageViews?.get(i)?.imageUrl = newsItem.images[i]
+//                }
+//            }
             newsHolder.titleView.text = newsItem.title
             newsHolder.titleView.paint?.isFakeBoldText = true
             newsHolder.titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16F)
@@ -246,26 +246,26 @@ class DisplayAactivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListen
             lateinit var titleView: TextView
             lateinit var commentCountView: TextView
             lateinit var pubDateView: TextView
-            var imageViews: Array<AsyncImageView>? = null
-
-            init {
-                titleView = cardView.findViewById(R.id.news_title) as TextView
-                pubDateView = cardView.findViewById(R.id.news_pub_date) as TextView
-                commentCountView = cardView.findViewById(R.id.news_comments_count) as TextView
-                //TODO Add handler when itemType is not 0
-                when (viewType) {
-                    Constants.NEWS_ITEM_TYPE_IMAGE -> {
-                        imageViews = arrayOf(cardView.findViewById(R.id.news_image1) as AsyncImageView)
-                    }
-                    Constants.NEWS_ITEM_TYPE_MULTI_IMAGES -> {
-                        imageViews = arrayOf(
-                                cardView.findViewById(R.id.news_image1) as AsyncImageView,
-                                cardView.findViewById(R.id.news_image2) as AsyncImageView,
-                                cardView.findViewById(R.id.news_image3) as AsyncImageView
-                        )
-                    }
-                }
-            }
+//            var imageViews: Array<AsyncImageView>? = null
+//
+//            init {
+//                titleView = cardView.findViewById(R.id.news_title) as TextView
+//                pubDateView = cardView.findViewById(R.id.news_pub_date) as TextView
+//                commentCountView = cardView.findViewById(R.id.news_comments_count) as TextView
+//                //TODO Add handler when itemType is not 0
+//                when (viewType) {
+//                    Constants.NEWS_ITEM_TYPE_IMAGE -> {
+//                        imageViews = arrayOf(cardView.findViewById(R.id.news_image1) as AsyncImageView)
+//                    }
+//                    Constants.NEWS_ITEM_TYPE_MULTI_IMAGES -> {
+//                        imageViews = arrayOf(
+//                                cardView.findViewById(R.id.news_image1) as AsyncImageView,
+//                                cardView.findViewById(R.id.news_image2) as AsyncImageView,
+//                                cardView.findViewById(R.id.news_image3) as AsyncImageView
+//                        )
+//                    }
+//                }
+//            }
         }
     }
 }

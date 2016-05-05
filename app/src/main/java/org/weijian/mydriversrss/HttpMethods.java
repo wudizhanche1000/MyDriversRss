@@ -1,9 +1,9 @@
 package org.weijian.mydriversrss;
 
 import android.content.Context;
-import android.os.Environment;
 
-import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
@@ -16,50 +16,45 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Created by weijian on 5/4/16.
  */
 public class HttpMethods {
-    public static final String BASE_URL = "http://dt.kkeji.com";
-
     private OkHttpClient mClient;
-
-    public Retrofit getRetrofit() {
-        return mRetrofit;
-    }
-
-    public void setRetrofit(Retrofit mRetrofit) {
-        this.mRetrofit = mRetrofit;
-    }
-
-    private Retrofit mRetrofit;
+    private volatile Map<String, Retrofit> retrofitMap = new HashMap<>();
     private volatile static HttpMethods instance;
     private Context mContext;
     static final int HTTP_CACHE_SIZE = 16 * 1024 * 1024;
 
-    private File getDiskCacheDir() {
-        File cachePath;
-        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())
-                || !Environment.isExternalStorageRemovable()) {
-            cachePath = mContext.getExternalCacheDir();
-        } else {
-            cachePath = mContext.getCacheDir();
+    public Retrofit getRetrofit(String baseUrl, boolean rxjava, boolean convertGson) {
+        if (retrofitMap.containsKey(baseUrl))
+            return retrofitMap.get(baseUrl);
+        else {
+            Retrofit.Builder builder = new Retrofit.Builder()
+                    .baseUrl(baseUrl)
+                    .client(mClient);
+            if (rxjava) {
+                builder.addCallAdapterFactory(RxJavaCallAdapterFactory.create());
+            }
+            if (convertGson) {
+                builder.addConverterFactory(GsonConverterFactory.create());
+            }
+            Retrofit retrofit = builder.build();
+            retrofitMap.put(baseUrl, retrofit);
+            return retrofit;
         }
-        return cachePath;
-
     }
+
 
     private HttpMethods(Context context) {
         mContext = context;
-        Cache cache = new Cache(getDiskCacheDir(), HTTP_CACHE_SIZE);
+        Cache cache = new Cache(Utils.getDiskCacheDir(mContext), HTTP_CACHE_SIZE);
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
         mClient = new OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
                 .cache(cache)
                 .build();
-        mRetrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(mClient)
-                .build();
+    }
+
+    public OkHttpClient getHttpClient() {
+        return mClient;
     }
 
     public static HttpMethods getInstance(Context context) {

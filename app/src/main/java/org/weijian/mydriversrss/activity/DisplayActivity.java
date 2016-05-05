@@ -19,6 +19,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.jetbrains.annotations.NotNull;
+import org.weijian.mydriversrss.EndlessOnScrollListener;
 import org.weijian.mydriversrss.HttpMethods;
 import org.weijian.mydriversrss.ImageManager;
 import org.weijian.mydriversrss.News;
@@ -26,15 +28,15 @@ import org.weijian.mydriversrss.NewsEntity;
 import org.weijian.mydriversrss.R;
 import org.weijian.mydriversrss.request.NewsRequest;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import rx.Observable;
-import rx.Subscriber;
+import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import static org.weijian.mydriversrss.Constants.NEWS_ITEM_TYPE_IMAGE;
@@ -51,11 +53,12 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
     @BindView(R.id.swipe_refresh) SwipeRefreshLayout mSwipeRefreshLayout;
 
     private HttpMethods mHttpMethods;
-
     private NewsAdapter mAdapter;
+    private Map<ImageView, String> map = new HashMap<>();
 
     @Override
     public void onRefresh() {
+        retrieveNews("0");
     }
 
     @Override
@@ -88,41 +91,57 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
         mAdapter.setHasStableIds(true);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getBaseContext()));
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerView.addOnScrollListener(
+                new EndlessOnScrollListener() {
+                    @Override
+                    public void onScrolledToEnd(@NotNull RecyclerView recyclerView) {
+                        RecyclerView.Adapter adapter = recyclerView.getAdapter();
+                        if (adapter instanceof NewsAdapter) {
+                            if (((NewsAdapter) adapter).newsSet.size() != 0) {
+                                int articleId = ((NewsAdapter) adapter).newsSet.last().getArticleId();
+                                retrieveNews(String.valueOf(articleId));
+                            }
+                        }
+                    }
+                }
+        );
         mRecyclerView.setAdapter(mAdapter);
 
         mSwipeRefreshLayout.setOnRefreshListener(this);
-
         mHttpMethods = HttpMethods.getInstance(getApplicationContext());
+        ImageManager.getInstance(getApplicationContext()).setOnImageLoadedListener(listener);
+        retrieveNews("0");
+    }
 
-        Subscriber<News> subscriber = new Subscriber<News>() {
-            @Override
-            public void onCompleted() {
-
+    Observer<NewsEntity> observer = new Observer<NewsEntity>() {
+        @Override
+        public void onCompleted() {
+            if (mProgressBar.getVisibility() == View.VISIBLE) {
+                mProgressBar.setVisibility(View.GONE);
             }
-
-            @Override
-            public void onError(Throwable e) {
-
+            if (mSwipeRefreshLayout.isRefreshing()) {
+                mSwipeRefreshLayout.setRefreshing(false);
             }
+        }
 
-            @Override
-            public void onNext(News news) {
-                mAdapter.addToTail(news);
+        @Override
+        public void onError(Throwable e) {
 
-            }
-        };
+        }
 
-        mHttpMethods.getRetrofit().create(NewsRequest.class)
-                .getNews("411203410", "ebbfb000", "3922335061311473025", "0", "1", "0")
+        @Override
+        public void onNext(NewsEntity newsEntity) {
+            mAdapter.addNewsCollections(newsEntity.getData().getNews());
+        }
+    };
+
+    private void retrieveNews(String minId) {
+        mHttpMethods.getRetrofit("http://dt.kkeji.com", true, true)
+                .create(NewsRequest.class)
+                .getNews("411203410", "ebbfb000", "39223325", minId, "1", "0")
                 .subscribeOn(Schedulers.io())
-                .flatMap(new Func1<NewsEntity, Observable<News>>() {
-                    @Override
-                    public Observable<News> call(NewsEntity newsEntity) {
-                        return Observable.from(newsEntity.getData().getNews());
-                    }
-                })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(subscriber);
+                .subscribe(observer);
     }
 
     @Override
@@ -134,6 +153,16 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
     protected void onStart() {
         super.onStart();
     }
+
+    private ImageManager.onImageLoaded listener = new ImageManager.onImageLoaded() {
+        @Override
+        public void onFinish(ImageView view, Bitmap bitmap, String imageUrl) {
+            String url = map.get(view);
+            if (url != null && url.equals(imageUrl)) {
+                view.setImageBitmap(bitmap);
+            }
+        }
+    };
 
     class NewsAdapter extends RecyclerView.Adapter {
         private Context mContext;
@@ -164,26 +193,38 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
             }
         }
 
-        List<News> newsList = new ArrayList<>();
+        private TreeSet<News> newsSet = new TreeSet<>();
+        private News[] newsArray;
 
-        public void addNews(int position, News news) {
-            newsList.add(position, news);
-            notifyItemInserted(position);
 
+        public void addNewsCollections(Collection<News> newsCollection) {
+            int size = newsSet.size();
+            newsSet.addAll(newsCollection);
+            notifyArray(size);
         }
 
-        public void addToTail(News news) {
-            addNews(newsList.size(), news);
+        private void notifyArray(int size) {
+            if (size != newsSet.size()) {
+                newsArray = newsSet.toArray(new News[newsSet.size()]);
+                notifyDataSetChanged();
+            }
         }
+
+        public void addNews(News news) {
+            int size = newsSet.size();
+            newsSet.add(news);
+            notifyArray(size);
+        }
+
 
         @Override
         public int getItemViewType(int position) {
-            return newsList.get(position).getImgs().size();
+            return newsArray[position].getImgs().size();
         }
 
         @Override
         public long getItemId(int position) {
-            return newsList.get(position).getArticleId();
+            return newsArray[position].getArticleId();
         }
 
         @Override
@@ -204,15 +245,18 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
             return new ItemViewHolder(view, viewType);
         }
 
-        @Override
+
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            News news = newsList.get(position);
+            News news = newsArray[position];
             if (holder instanceof ItemViewHolder) {
                 ((ItemViewHolder) holder).titleView.setText(news.getTitle());
                 for (int i = 0; i < news.getImgs().size(); i++) {
                     ImageView imageView = ((ItemViewHolder) holder).imageViews[i];
-                    Bitmap bitmap = ImageManager.INSTANCE.getBitmap(news.getImgs().get(i));
+                    String imageUrl = news.getImgs().get(i);
+                    map.put(imageView, imageUrl);
+                    Bitmap bitmap = ImageManager.getInstance(mContext).getBitmap(imageUrl, imageView, 0, 0);
                     imageView.setImageBitmap(bitmap);
+
                 }
             }
 
@@ -220,7 +264,7 @@ public class DisplayActivity extends AppCompatActivity implements SwipeRefreshLa
 
         @Override
         public int getItemCount() {
-            return newsList.size();
+            return newsSet.size();
         }
     }
 
